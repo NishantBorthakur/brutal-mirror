@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: roast
+    description: Brutal Mirror roast operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /roast:
+    post:
+      operationId: createRoast
+      tags: [roast]
+      summary: Generate a brutal AI roast
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoastRequest"
+      responses:
+        "200":
+          description: Roast generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoastResult"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +65,54 @@ components:
           type: string
       required:
         - status
-
+    RoastRequest:
+      type: object
+      properties:
+        category:
+          type: string
+          description: The category of content being roasted
+        intensity:
+          type: string
+          description: Intensity level of the roast (Honest, Harsh, Brutal, Career-ending)
+        content:
+          type: string
+          description: The content to be roasted
+      required:
+        - category
+        - intensity
+        - content
+    RoastResult:
+      type: object
+      properties:
+        brutalRoast:
+          type: string
+          description: The main roast
+        actualDiagnosis:
+          type: string
+          description: The real diagnosis of the issue
+        biggestWeaknesses:
+          type: array
+          items:
+            type: string
+          description: List of biggest weaknesses
+        threeFixes:
+          type: array
+          items:
+            type: string
+          description: Three actionable fixes
+        improvedVersion:
+          type: string
+          description: An improved version of the input
+      required:
+        - brutalRoast
+        - actualDiagnosis
+        - biggestWeaknesses
+        - threeFixes
+        - improvedVersion
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error

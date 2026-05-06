@@ -1,0 +1,177 @@
+Build a complete mobile-first AI web app called “Brutal Mirror”.
+
+The app should be a polished, dark-themed, responsive web application optimized for mobile screens first, but also usable on desktop.
+
+Core concept:
+Brutal Mirror lets users paste an idea, bio, resume summary, dating profile, business name, YouTube channel idea, personal goal, or app idea. The AI gives brutally honest feedback, roasts the input, diagnoses the real issue, and gives practical improvements.
+
+Tech stack:
+- React frontend
+- Node.js + Express backend
+- Use Vite if needed
+- Use modern CSS or Tailwind if available
+- Use localStorage for saved history
+- Use OpenAI API from environment variable: OPENAI_API_KEY
+- Do not hardcode API keys
+- The app should run fully inside Replit
+
+Design requirements:
+- Dark premium UI
+- Mobile-first layout
+- Clean typography
+- Card-based sections
+- Rounded corners
+- Smooth buttons
+- Strong contrast
+- Use a black/charcoal background
+- Accent color: electric purple or neon green
+- App should feel edgy, sharp, and premium
+- No childish design
+- No clutter
+
+App name:
+Brutal Mirror
+
+Landing page copy:
+Headline: “Get roasted by AI. Then get better.”
+Subheadline: “Paste your idea, bio, resume, profile, or plan. Brutal Mirror will destroy it, diagnose it, and rebuild it sharper.”
+Primary CTA: “Start Roast”
+
+Main features:
+1. Home/Landing section
+2. Roast generator form
+3. Result display section
+4. Local history section
+5. Copy result button
+6. New roast button
+7. Clear history button
+8. Loading state while AI generates feedback
+9. Error handling if API fails
+10. Character counter for input
+
+Roast generator form:
+- Category dropdown with:
+  - Instagram Bio
+  - Startup Idea
+  - Dating Profile
+  - Resume Summary
+  - Business Name
+  - YouTube Channel Idea
+  - Personal Goal
+  - Mobile App Idea
+  - Other
+
+- Intensity dropdown with:
+  - Honest
+  - Harsh
+  - Brutal
+  - Career-ending
+
+- Textarea placeholder:
+  “Paste what you want brutally judged…”
+
+Validation:
+- User must enter at least 20 characters
+- If input is too short, show a clean error message
+- Limit input to 3000 characters
+- Show character counter
+
+AI behavior:
+Create a backend endpoint:
+POST /api/roast
+
+Request body:
+{
+  category: string,
+  intensity: string,
+  content: string
+}
+
+The backend should call OpenAI using OPENAI_API_KEY.
+
+The AI should return structured JSON with:
+{
+  "brutalRoast": "...",
+  "actualDiagnosis": "...",
+  "biggestWeaknesses": ["...", "...", "..."],
+  "threeFixes": ["...", "...", "..."],
+  "improvedVersion": "..."
+}
+
+System prompt for AI:
+“You are Brutal Mirror, an elite brutally honest critique assistant. Your job is to give sharp, direct, uncomfortable but useful feedback. Be witty, savage, and memorable, but do not use hate speech, slurs, threats, sexual harassment, or target protected traits. Never encourage self-harm or illegal activity. Your feedback must be harsh but constructive. Always include a better version of the user’s input.”
+
+Intensity rules:
+- Honest: direct but professional
+- Harsh: sharper and more blunt
+- Brutal: savage, witty, and uncomfortable
+- Career-ending: extremely sharp and funny, but still constructive and safe
+
+The backend should enforce JSON output. If OpenAI does not return valid JSON, handle the error gracefully.
+
+Result display:
+After generation, show:
+- Brutal Roast
+- Actual Diagnosis
+- Biggest Weaknesses
+- 3 Fixes
+- Improved Version
+
+Each section should be visually separated in premium cards.
+
+History:
+- Save each generated roast in localStorage
+- Each history item should include category, intensity, original input preview, date/time, and result
+- Allow user to open a previous result
+- Allow user to clear all history
+
+Copy:
+Add a “Copy Result” button that copies a nicely formatted version of the result to clipboard.
+
+Mobile UX:
+- Sticky generate button on small screens if appropriate
+- Large tap targets
+- Smooth scrolling to result after generation
+- Good spacing
+- Result should be easy to read on mobile
+
+Backend requirements:
+- Express server
+- CORS enabled if needed
+- JSON body parsing
+- /api/health endpoint
+- /api/roast endpoint
+- Proper try/catch error handling
+- Return meaningful error messages
+- Do not expose API key to frontend
+
+Frontend requirements:
+- Clean component structure
+- No unnecessary complexity
+- State management with React hooks
+- Loading spinner or animated text while generating
+- Disable generate button during loading
+- Show API errors nicely
+
+Suggested file structure:
+- package.json
+- server/index.js
+- client/src/App.jsx
+- client/src/main.jsx
+- client/src/styles.css
+- .env.example
+- README.md
+
+README should include:
+- How to run the app
+- Where to add OPENAI_API_KEY
+- What the app does
+- Future monetization ideas
+
+Important:
+Make the app production-quality enough to demo today.
+Do not build authentication.
+Do not build payments.
+Do not build a database.
+Do not overcomplicate.
+Prioritize a working, polished MVP.
