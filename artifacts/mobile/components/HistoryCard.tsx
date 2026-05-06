@@ -10,11 +10,14 @@ interface Props {
   onPress: () => void;
 }
 
-const INTENSITY_COLORS: Record<string, string> = {
-  Honest: "#6b7280",
-  Harsh: "#f59e0b",
-  Brutal: "#ef4444",
-  "Career-ending": "#8b5cf6",
+const INTENSITY_CONFIG: Record<
+  string,
+  { color: string; emoji: string }
+> = {
+  Honest: { color: "#6b7280", emoji: "🙂" },
+  Harsh: { color: "#f59e0b", emoji: "😬" },
+  Brutal: { color: "#ef4444", emoji: "💀" },
+  "Career-ending": { color: "#8b5cf6", emoji: "☠️" },
 };
 
 function formatDate(iso: string): string {
@@ -34,8 +37,11 @@ function formatDate(iso: string): string {
 
 export function HistoryCard({ item, onPress }: Props) {
   const colors = useColors();
-  const intensityColor =
-    INTENSITY_COLORS[item.intensity] || colors.mutedForeground;
+  const intensityConfig =
+    INTENSITY_CONFIG[item.intensity] ?? {
+      color: colors.mutedForeground,
+      emoji: "🔥",
+    };
 
   return (
     <TouchableOpacity
@@ -44,52 +50,66 @@ export function HistoryCard({ item, onPress }: Props) {
         { backgroundColor: colors.card, borderColor: colors.border },
       ]}
       onPress={onPress}
-      activeOpacity={0.75}
+      activeOpacity={0.72}
     >
-      <View style={styles.topRow}>
-        <View style={styles.badges}>
-          <View
-            style={[
-              styles.categoryBadge,
-              { backgroundColor: colors.primary + "15" },
-            ]}
-          >
-            <Text style={[styles.categoryText, { color: colors.primary }]}>
-              {item.category}
-            </Text>
+      <View
+        style={[
+          styles.accentBar,
+          { backgroundColor: intensityConfig.color },
+        ]}
+      />
+      <View style={styles.inner}>
+        <View style={styles.topRow}>
+          <View style={styles.badgeRow}>
+            <View
+              style={[
+                styles.categoryBadge,
+                { backgroundColor: colors.primary + "15" },
+              ]}
+            >
+              <Text style={[styles.badgeText, { color: colors.primary }]}>
+                {item.category}
+              </Text>
+            </View>
+            <View
+              style={[
+                styles.intensityBadge,
+                { backgroundColor: intensityConfig.color + "15" },
+              ]}
+            >
+              <Text style={styles.intensityEmoji}>{intensityConfig.emoji}</Text>
+              <Text
+                style={[styles.badgeText, { color: intensityConfig.color }]}
+              >
+                {item.intensity}
+              </Text>
+            </View>
           </View>
-          <View
-            style={[
-              styles.intensityBadge,
-              { backgroundColor: intensityColor + "15" },
-            ]}
-          >
-            <Text style={[styles.intensityText, { color: intensityColor }]}>
-              {item.intensity}
-            </Text>
-          </View>
+          <Text style={[styles.date, { color: colors.mutedForeground }]}>
+            {formatDate(item.createdAt)}
+          </Text>
         </View>
-        <Text style={[styles.date, { color: colors.mutedForeground }]}>
-          {formatDate(item.createdAt)}
+
+        <Text
+          style={[styles.contentPreview, { color: colors.mutedForeground }]}
+          numberOfLines={1}
+        >
+          {item.contentPreview}
         </Text>
-      </View>
 
-      <Text
-        style={[styles.preview, { color: colors.mutedForeground }]}
-        numberOfLines={2}
-      >
-        {item.contentPreview}
-      </Text>
+        <Text
+          style={[styles.roastPreview, { color: colors.foreground }]}
+          numberOfLines={2}
+        >
+          "{item.result.brutalRoast}"
+        </Text>
 
-      <Text
-        style={[styles.roastPreview, { color: colors.foreground }]}
-        numberOfLines={2}
-      >
-        {item.result.brutalRoast}
-      </Text>
-
-      <View style={styles.footer}>
-        <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
+        <View style={styles.footer}>
+          <Text style={[styles.viewText, { color: colors.primary }]}>
+            View full roast
+          </Text>
+          <Feather name="chevron-right" size={13} color={colors.primary} />
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -99,51 +119,73 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 14,
     borderWidth: 1,
-    padding: 16,
-    gap: 10,
+    overflow: "hidden",
+    flexDirection: "row",
+  },
+  accentBar: {
+    width: 3,
+  },
+  inner: {
+    flex: 1,
+    padding: 14,
+    gap: 9,
   },
   topRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 8,
   },
-  badges: {
+  badgeRow: {
     flexDirection: "row",
     gap: 6,
+    flexShrink: 1,
+    flexWrap: "wrap",
   },
   categoryBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 20,
   },
-  categoryText: {
-    fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
-  },
   intensityBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 20,
   },
-  intensityText: {
+  intensityEmoji: {
+    fontSize: 11,
+  },
+  badgeText: {
     fontSize: 11,
     fontFamily: "Inter_600SemiBold",
   },
   date: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    flexShrink: 0,
+  },
+  contentPreview: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-  },
-  preview: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    lineHeight: 18,
+    lineHeight: 17,
   },
   roastPreview: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
     lineHeight: 20,
+    fontStyle: "italic",
   },
   footer: {
-    alignItems: "flex-end",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 2,
+  },
+  viewText: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
   },
 });

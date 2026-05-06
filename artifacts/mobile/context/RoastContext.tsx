@@ -4,6 +4,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -35,9 +36,8 @@ interface RoastContextValue {
     intensity: string,
     content: string
   ) => Promise<void>;
-  clearHistory: () => void;
+  clearHistory: () => Promise<void>;
   clearResult: () => void;
-  loadHistoryItem: (item: RoastHistoryItem) => void;
 }
 
 const RoastContext = createContext<RoastContextValue | null>(null);
@@ -56,10 +56,17 @@ export function RoastProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Use a ref to avoid stale closure on history inside generateRoast
+  const historyRef = useRef<RoastHistoryItem[]>([]);
+
   useEffect(() => {
     AsyncStorage.getItem(HISTORY_KEY)
       .then((raw) => {
-        if (raw) setHistory(JSON.parse(raw) as RoastHistoryItem[]);
+        if (raw) {
+          const parsed = JSON.parse(raw) as RoastHistoryItem[];
+          setHistory(parsed);
+          historyRef.current = parsed;
+        }
       })
       .catch(() => {});
   }, []);
@@ -86,9 +93,7 @@ export function RoastProvider({ children }: { children: React.ReactNode }) {
           body: JSON.stringify({ category, intensity, content }),
         });
 
-        const data = (await response.json()) as
-          | RoastResult
-          | { error: string };
+        const data = (await response.json()) as RoastResult | { error: string };
 
         if (!response.ok) {
           const errData = data as { error: string };
@@ -96,34 +101,46 @@ export function RoastProvider({ children }: { children: React.ReactNode }) {
         }
 
         const result = data as RoastResult;
+
+        // Validate essential fields to catch malformed responses
+        if (!result.brutalRoast || !result.actualDiagnosis) {
+          throw new Error("AI returned an incomplete response. Try again.");
+        }
+
         setCurrentResult(result);
         setCurrentMeta({ category, intensity, content });
 
         const newItem: RoastHistoryItem = {
-          id:
-            Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
           category,
           intensity,
-          contentPreview: content.slice(0, 80) + (content.length > 80 ? "…" : ""),
+          contentPreview:
+            content.slice(0, 80) + (content.length > 80 ? "…" : ""),
           result,
           createdAt: new Date().toISOString(),
         };
 
-        const newHistory = [newItem, ...history].slice(0, MAX_HISTORY);
+        // Use ref to avoid stale closure
+        const newHistory = [newItem, ...historyRef.current].slice(
+          0,
+          MAX_HISTORY
+        );
+        historyRef.current = newHistory;
         setHistory(newHistory);
         await saveHistory(newHistory);
       } catch (err) {
         const msg =
-          err instanceof Error ? err.message : "Something went wrong";
+          err instanceof Error ? err.message : "Something went wrong. Try again.";
         setError(msg);
       } finally {
         setIsLoading(false);
       }
     },
-    [history, saveHistory]
+    [saveHistory]
   );
 
   const clearHistory = useCallback(async () => {
+    historyRef.current = [];
     setHistory([]);
     await AsyncStorage.removeItem(HISTORY_KEY);
   }, []);
@@ -132,15 +149,6 @@ export function RoastProvider({ children }: { children: React.ReactNode }) {
     setCurrentResult(null);
     setCurrentMeta(null);
     setError(null);
-  }, []);
-
-  const loadHistoryItem = useCallback((item: RoastHistoryItem) => {
-    setCurrentResult(item.result);
-    setCurrentMeta({
-      category: item.category,
-      intensity: item.intensity,
-      content: item.contentPreview,
-    });
   }, []);
 
   return (
@@ -154,7 +162,6 @@ export function RoastProvider({ children }: { children: React.ReactNode }) {
         generateRoast,
         clearHistory,
         clearResult,
-        loadHistoryItem,
       }}
     >
       {children}

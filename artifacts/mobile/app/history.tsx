@@ -1,11 +1,13 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
   FlatList,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -22,28 +24,28 @@ export default function HistoryScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { history, clearHistory, loadHistoryItem } = useRoast();
-  const [selectedItem, setSelectedItem] =
-    useState<RoastHistoryItem | null>(null);
+  const { history, clearHistory } = useRoast();
+  const [selectedItem, setSelectedItem] = useState<RoastHistoryItem | null>(
+    null
+  );
 
-  const topPad =
-    Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
+  const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   const handleClearHistory = () => {
     Alert.alert(
-      "Clear History",
-      "Are you sure you want to delete all your roasts? This cannot be undone.",
+      "Clear All History",
+      "This will permanently delete all your saved roasts. No going back.",
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Clear All",
+          text: "Delete All",
           style: "destructive",
           onPress: async () => {
             await Haptics.notificationAsync(
               Haptics.NotificationFeedbackType.Warning
             );
-            clearHistory();
+            await clearHistory();
             setSelectedItem(null);
           },
         },
@@ -58,37 +60,46 @@ export default function HistoryScreen() {
           style={[
             styles.header,
             {
-              paddingTop: topPad + 16,
+              paddingTop: topPad + 14,
               backgroundColor: colors.background,
               borderBottomColor: colors.border,
             },
           ]}
         >
           <TouchableOpacity
-            style={[styles.backBtn, { borderColor: colors.border }]}
+            style={[
+              styles.backBtn,
+              { borderColor: colors.border, backgroundColor: colors.card },
+            ]}
             onPress={() => setSelectedItem(null)}
+            activeOpacity={0.7}
           >
-            <Feather name="arrow-left" size={18} color={colors.foreground} />
+            <Feather name="arrow-left" size={17} color={colors.foreground} />
           </TouchableOpacity>
-          <Text style={[styles.title, { color: colors.foreground }]}>
-            Past Roast
-          </Text>
-          <View style={{ width: 40 }} />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.title, { color: colors.foreground }]}>
+              Past Roast
+            </Text>
+            <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
+              {selectedItem.category} · {selectedItem.intensity}
+            </Text>
+          </View>
         </View>
-        <FlatList
-          data={[selectedItem]}
-          keyExtractor={(item) => item.id}
+        <ScrollView
           contentContainerStyle={[
-            styles.scroll,
-            { paddingBottom: bottomPad + 20 },
+            styles.scrollPad,
+            { paddingBottom: bottomPad + 24 },
           ]}
-          renderItem={({ item }) => (
-            <RoastResultView
-              result={item.result}
-              meta={{ category: item.category, intensity: item.intensity }}
-            />
-          )}
-        />
+          showsVerticalScrollIndicator={false}
+        >
+          <RoastResultView
+            result={selectedItem.result}
+            meta={{
+              category: selectedItem.category,
+              intensity: selectedItem.intensity,
+            }}
+          />
+        </ScrollView>
       </View>
     );
   }
@@ -99,59 +110,78 @@ export default function HistoryScreen() {
         style={[
           styles.header,
           {
-            paddingTop: topPad + 16,
+            paddingTop: topPad + 14,
             backgroundColor: colors.background,
             borderBottomColor: colors.border,
           },
         ]}
       >
         <TouchableOpacity
-          style={[styles.backBtn, { borderColor: colors.border }]}
+          style={[
+            styles.backBtn,
+            { borderColor: colors.border, backgroundColor: colors.card },
+          ]}
           onPress={() => router.back()}
+          activeOpacity={0.7}
         >
-          <Feather name="arrow-left" size={18} color={colors.foreground} />
+          <Feather name="arrow-left" size={17} color={colors.foreground} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.foreground }]}>
-          History
-        </Text>
-        {history.length > 0 ? (
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.title, { color: colors.foreground }]}>
+            History
+          </Text>
+          {history.length > 0 && (
+            <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
+              {history.length} roast{history.length !== 1 ? "s" : ""} saved
+            </Text>
+          )}
+        </View>
+        {history.length > 0 && (
           <TouchableOpacity
-            style={[styles.clearBtn, { borderColor: colors.destructive + "60" }]}
+            style={[
+              styles.clearBtn,
+              {
+                borderColor: colors.destructive + "50",
+                backgroundColor: colors.destructive + "10",
+              },
+            ]}
             onPress={handleClearHistory}
+            activeOpacity={0.7}
           >
-            <Feather name="trash-2" size={16} color={colors.destructive} />
+            <Feather name="trash-2" size={15} color={colors.destructive} />
           </TouchableOpacity>
-        ) : (
-          <View style={{ width: 40 }} />
         )}
       </View>
 
       {history.length === 0 ? (
         <View style={styles.emptyState}>
-          <View
-            style={[
-              styles.emptyIconBg,
-              { backgroundColor: colors.card, borderColor: colors.border },
-            ]}
+          <LinearGradient
+            colors={["#8b5cf620", "#8b5cf608"]}
+            style={styles.emptyIconBg}
           >
-            <Feather name="clock" size={28} color={colors.mutedForeground} />
-          </View>
+            <Text style={styles.emptyEmoji}>🪞</Text>
+          </LinearGradient>
           <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
-            No roasts yet
+            Nothing here yet
           </Text>
           <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-            Your roasting history will appear here after your first session.
+            Your roasting history will appear here. Every roast is saved for up
+            to 20 sessions.
           </Text>
           <TouchableOpacity
-            style={[
-              styles.startBtn,
-              { backgroundColor: colors.primary + "20", borderColor: colors.primary + "40" },
-            ]}
+            style={[styles.startBtn]}
             onPress={() => router.back()}
+            activeOpacity={0.85}
           >
-            <Text style={[styles.startBtnText, { color: colors.primary }]}>
-              Start Roasting
-            </Text>
+            <LinearGradient
+              colors={["#6d28d9", "#8b5cf6"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.startBtnGradient}
+            >
+              <Feather name="zap" size={15} color="#fff" />
+              <Text style={styles.startBtnText}>Start Roasting</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       ) : (
@@ -160,14 +190,11 @@ export default function HistoryScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={[
             styles.list,
-            { paddingBottom: bottomPad + 20 },
+            { paddingBottom: bottomPad + 24 },
           ]}
           ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
           renderItem={({ item }) => (
-            <HistoryCard
-              item={item}
-              onPress={() => setSelectedItem(item)}
-            />
+            <HistoryCard item={item} onPress={() => setSelectedItem(item)} />
           )}
           showsVerticalScrollIndicator={false}
         />
@@ -184,7 +211,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingBottom: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
     gap: 12,
   },
@@ -197,9 +224,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   title: {
-    flex: 1,
     fontSize: 20,
     fontFamily: "Inter_700Bold",
+    letterSpacing: -0.3,
+  },
+  subtitle: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    marginTop: 2,
   },
   clearBtn: {
     width: 40,
@@ -209,7 +241,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  scroll: {
+  scrollPad: {
     padding: 20,
   },
   list: {
@@ -220,20 +252,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 40,
-    gap: 12,
+    gap: 14,
   },
   emptyIconBg: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    borderWidth: 1,
+    width: 80,
+    height: 80,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
   },
+  emptyEmoji: {
+    fontSize: 36,
+  },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontFamily: "Inter_700Bold",
+    textAlign: "center",
   },
   emptyText: {
     fontSize: 14,
@@ -242,14 +277,20 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   startBtn: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginTop: 8,
+    borderRadius: 14,
+    overflow: "hidden",
+    marginTop: 4,
+  },
+  startBtnGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
   },
   startBtnText: {
-    fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
+    color: "#fff",
+    fontSize: 15,
+    fontFamily: "Inter_700Bold",
   },
 });

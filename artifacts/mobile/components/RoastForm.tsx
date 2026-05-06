@@ -3,11 +3,10 @@ import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useRef, useState } from "react";
 import {
-  ActivityIndicator,
+  Animated,
   Modal,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -17,6 +16,7 @@ import {
 
 import { useRoast } from "@/context/RoastContext";
 import { useColors } from "@/hooks/useColors";
+import { LoadingDots } from "./LoadingDots";
 
 const CATEGORIES = [
   "Instagram Bio",
@@ -31,23 +31,34 @@ const CATEGORIES = [
 ];
 
 const INTENSITIES = [
-  { label: "Honest", desc: "Direct but professional" },
-  { label: "Harsh", desc: "Sharp and blunt" },
-  { label: "Brutal", desc: "Savage and witty" },
-  { label: "Career-ending", desc: "Extremely sharp & funny" },
+  {
+    label: "Honest",
+    desc: "Direct but professional",
+    color: "#6b7280",
+    emoji: "🙂",
+  },
+  {
+    label: "Harsh",
+    desc: "Sharp and unfiltered",
+    color: "#f59e0b",
+    emoji: "😬",
+  },
+  {
+    label: "Brutal",
+    desc: "Savage, witty, uncomfortable",
+    color: "#ef4444",
+    emoji: "💀",
+  },
+  {
+    label: "Career-ending",
+    desc: "Maximum destruction",
+    color: "#8b5cf6",
+    emoji: "☠️",
+  },
 ];
 
 const MAX_LENGTH = 3000;
 const MIN_LENGTH = 20;
-
-interface PickerModalProps {
-  visible: boolean;
-  title: string;
-  options: string[];
-  selected: string;
-  onSelect: (val: string) => void;
-  onClose: () => void;
-}
 
 function PickerModal({
   visible,
@@ -56,66 +67,67 @@ function PickerModal({
   selected,
   onSelect,
   onClose,
-}: PickerModalProps) {
+}: {
+  visible: boolean;
+  title: string;
+  options: string[];
+  selected: string;
+  onSelect: (val: string) => void;
+  onClose: () => void;
+}) {
   const colors = useColors();
   return (
-    <Modal visible={visible} transparent animationType="slide">
+    <Modal visible={visible} transparent animationType="slide" statusBarTranslucent>
       <Pressable style={styles.modalOverlay} onPress={onClose}>
-        <View
+        <Pressable
           style={[
             styles.modalSheet,
             { backgroundColor: colors.card, borderColor: colors.border },
           ]}
+          onPress={() => {}}
         >
           <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
           <Text style={[styles.modalTitle, { color: colors.foreground }]}>
             {title}
           </Text>
-          {options.map((opt) => (
-            <TouchableOpacity
-              key={opt}
-              style={[
-                styles.modalOption,
-                {
-                  backgroundColor:
-                    selected === opt ? colors.primary + "20" : "transparent",
-                  borderColor:
-                    selected === opt ? colors.primary : "transparent",
-                },
-              ]}
-              onPress={() => {
-                onSelect(opt);
-                onClose();
-              }}
-            >
-              <Text
+          {options.map((opt) => {
+            const isSelected = selected === opt;
+            return (
+              <TouchableOpacity
+                key={opt}
                 style={[
-                  styles.modalOptionText,
+                  styles.modalOption,
                   {
-                    color:
-                      selected === opt ? colors.primary : colors.foreground,
-                    fontWeight: selected === opt ? "600" : "400",
+                    backgroundColor: isSelected
+                      ? colors.primary + "18"
+                      : "transparent",
+                    borderColor: isSelected ? colors.primary : colors.border,
                   },
                 ]}
+                onPress={() => {
+                  onSelect(opt);
+                  onClose();
+                }}
+                activeOpacity={0.7}
               >
-                {opt}
-              </Text>
-              {selected === opt && (
-                <Feather name="check" size={16} color={colors.primary} />
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
+                <Text
+                  style={[
+                    styles.modalOptionText,
+                    { color: isSelected ? colors.primary : colors.foreground },
+                  ]}
+                >
+                  {opt}
+                </Text>
+                {isSelected && (
+                  <Feather name="check" size={16} color={colors.primary} />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </Pressable>
       </Pressable>
     </Modal>
   );
-}
-
-interface IntensityPickerModalProps {
-  visible: boolean;
-  selected: string;
-  onSelect: (val: string) => void;
-  onClose: () => void;
 }
 
 function IntensityPickerModal({
@@ -123,66 +135,73 @@ function IntensityPickerModal({
   selected,
   onSelect,
   onClose,
-}: IntensityPickerModalProps) {
+}: {
+  visible: boolean;
+  selected: string;
+  onSelect: (val: string) => void;
+  onClose: () => void;
+}) {
   const colors = useColors();
   return (
-    <Modal visible={visible} transparent animationType="slide">
+    <Modal visible={visible} transparent animationType="slide" statusBarTranslucent>
       <Pressable style={styles.modalOverlay} onPress={onClose}>
-        <View
+        <Pressable
           style={[
             styles.modalSheet,
             { backgroundColor: colors.card, borderColor: colors.border },
           ]}
+          onPress={() => {}}
         >
           <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
           <Text style={[styles.modalTitle, { color: colors.foreground }]}>
             Intensity Level
           </Text>
-          {INTENSITIES.map((item) => (
-            <TouchableOpacity
-              key={item.label}
-              style={[
-                styles.intensityOption,
-                {
-                  backgroundColor:
-                    selected === item.label
-                      ? colors.primary + "20"
+          {INTENSITIES.map((item) => {
+            const isSelected = selected === item.label;
+            return (
+              <TouchableOpacity
+                key={item.label}
+                style={[
+                  styles.intensityOption,
+                  {
+                    backgroundColor: isSelected
+                      ? item.color + "18"
                       : colors.secondary,
-                  borderColor:
-                    selected === item.label ? colors.primary : colors.border,
-                },
-              ]}
-              onPress={() => {
-                onSelect(item.label);
-                onClose();
-              }}
-            >
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={[
-                    styles.intensityLabel,
-                    {
-                      color:
-                        selected === item.label
-                          ? colors.primary
-                          : colors.foreground,
-                    },
-                  ]}
-                >
-                  {item.label}
-                </Text>
-                <Text
-                  style={[styles.intensityDesc, { color: colors.mutedForeground }]}
-                >
-                  {item.desc}
-                </Text>
-              </View>
-              {selected === item.label && (
-                <Feather name="check" size={16} color={colors.primary} />
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
+                    borderColor: isSelected ? item.color : colors.border,
+                  },
+                ]}
+                onPress={() => {
+                  onSelect(item.label);
+                  onClose();
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.intensityEmoji}>{item.emoji}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      styles.intensityLabel,
+                      { color: isSelected ? item.color : colors.foreground },
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.intensityDesc,
+                      { color: colors.mutedForeground },
+                    ]}
+                  >
+                    {item.desc}
+                  </Text>
+                </View>
+                {isSelected && (
+                  <Feather name="check" size={16} color={item.color} />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </Pressable>
       </Pressable>
     </Modal>
   );
@@ -200,14 +219,33 @@ export function RoastForm({ onResultReady }: RoastFormProps) {
   const [intensity, setIntensity] = useState("Brutal");
   const [content, setContent] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [isFocused, setIsFocused] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showIntensityModal, setShowIntensityModal] = useState(false);
 
   const inputRef = useRef<TextInput>(null);
+  const buttonScale = useRef(new Animated.Value(1)).current;
 
   const charCount = content.length;
   const isOverLimit = charCount > MAX_LENGTH;
   const isTooShort = charCount < MIN_LENGTH && charCount > 0;
+  const currentIntensity = INTENSITIES.find((i) => i.label === intensity);
+
+  const pressIn = () => {
+    Animated.spring(buttonScale, {
+      toValue: 0.97,
+      useNativeDriver: true,
+      speed: 40,
+    }).start();
+  };
+
+  const pressOut = () => {
+    Animated.spring(buttonScale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 40,
+    }).start();
+  };
 
   const handleSubmit = async () => {
     if (charCount < MIN_LENGTH) {
@@ -223,6 +261,13 @@ export function RoastForm({ onResultReady }: RoastFormProps) {
     await generateRoast(category, intensity, content);
     onResultReady?.();
   };
+
+  const textAreaBorderColor = (() => {
+    if (validationError || error || isOverLimit) return colors.destructive;
+    if (isFocused) return colors.primary;
+    if (isTooShort) return colors.primary + "50";
+    return colors.border;
+  })();
 
   return (
     <View style={styles.container}>
@@ -245,9 +290,10 @@ export function RoastForm({ onResultReady }: RoastFormProps) {
         <TouchableOpacity
           style={[
             styles.selectorButton,
-            { backgroundColor: colors.card, borderColor: colors.border, flex: 1 },
+            { backgroundColor: colors.card, borderColor: colors.border },
           ]}
           onPress={() => setShowCategoryModal(true)}
+          activeOpacity={0.7}
         >
           <Text style={[styles.selectorLabel, { color: colors.mutedForeground }]}>
             Category
@@ -259,25 +305,39 @@ export function RoastForm({ onResultReady }: RoastFormProps) {
             >
               {category}
             </Text>
-            <Feather name="chevron-down" size={14} color={colors.mutedForeground} />
+            <Feather
+              name="chevron-down"
+              size={13}
+              color={colors.mutedForeground}
+            />
           </View>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[
             styles.selectorButton,
-            { backgroundColor: colors.card, borderColor: colors.border, flex: 1 },
+            { backgroundColor: colors.card, borderColor: colors.border },
           ]}
           onPress={() => setShowIntensityModal(true)}
+          activeOpacity={0.7}
         >
           <Text style={[styles.selectorLabel, { color: colors.mutedForeground }]}>
             Intensity
           </Text>
           <View style={styles.selectorValueRow}>
-            <Text style={[styles.selectorValue, { color: colors.primary }]}>
+            <Text
+              style={[
+                styles.selectorValue,
+                { color: currentIntensity?.color ?? colors.primary },
+              ]}
+            >
               {intensity}
             </Text>
-            <Feather name="chevron-down" size={14} color={colors.mutedForeground} />
+            <Feather
+              name="chevron-down"
+              size={13}
+              color={colors.mutedForeground}
+            />
           </View>
         </TouchableOpacity>
       </View>
@@ -287,12 +347,7 @@ export function RoastForm({ onResultReady }: RoastFormProps) {
           styles.textAreaContainer,
           {
             backgroundColor: colors.card,
-            borderColor:
-              validationError || error || isOverLimit
-                ? colors.destructive
-                : isTooShort
-                ? colors.primary + "60"
-                : colors.border,
+            borderColor: textAreaBorderColor,
           },
         ]}
       >
@@ -308,30 +363,35 @@ export function RoastForm({ onResultReady }: RoastFormProps) {
             setContent(t);
             setValidationError(null);
           }}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           maxLength={MAX_LENGTH + 10}
+          selectionColor={colors.primary}
         />
         <View style={styles.charCountRow}>
           <Text
             style={[
               styles.charCount,
               {
-                color:
-                  isOverLimit
-                    ? colors.destructive
-                    : charCount > MAX_LENGTH * 0.8
-                    ? "#f59e0b"
-                    : colors.mutedForeground,
+                color: isOverLimit
+                  ? colors.destructive
+                  : charCount > MAX_LENGTH * 0.85
+                  ? "#f59e0b"
+                  : colors.mutedForeground,
               },
             ]}
           >
-            {charCount}/{MAX_LENGTH}
+            {charCount.toLocaleString()}/{MAX_LENGTH.toLocaleString()}
           </Text>
         </View>
       </View>
 
       {(validationError || error) && (
         <View
-          style={[styles.errorBox, { backgroundColor: colors.destructive + "15" }]}
+          style={[
+            styles.errorBox,
+            { backgroundColor: colors.destructive + "12", borderColor: colors.destructive + "30" },
+          ]}
         >
           <Feather name="alert-circle" size={14} color={colors.destructive} />
           <Text style={[styles.errorText, { color: colors.destructive }]}>
@@ -340,38 +400,38 @@ export function RoastForm({ onResultReady }: RoastFormProps) {
         </View>
       )}
 
-      <TouchableOpacity
-        onPress={handleSubmit}
-        disabled={isLoading}
-        activeOpacity={0.85}
-        style={{ marginTop: 4 }}
-      >
-        <LinearGradient
-          colors={
-            isLoading
-              ? ["#4c1d95", "#4c1d95"]
-              : ["#7c3aed", "#8b5cf6", "#a78bfa"]
-          }
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[
-            styles.submitButton,
-            { opacity: isLoading ? 0.7 : 1 },
-          ]}
+      <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+        <TouchableOpacity
+          onPress={handleSubmit}
+          onPressIn={pressIn}
+          onPressOut={pressOut}
+          disabled={isLoading}
+          activeOpacity={1}
         >
-          {isLoading ? (
-            <View style={styles.loadingRow}>
-              <ActivityIndicator color="#fff" size="small" />
-              <Text style={styles.submitText}>Analyzing…</Text>
-            </View>
-          ) : (
-            <View style={styles.loadingRow}>
-              <Feather name="zap" size={18} color="#fff" />
-              <Text style={styles.submitText}>Roast Me</Text>
-            </View>
-          )}
-        </LinearGradient>
-      </TouchableOpacity>
+          <LinearGradient
+            colors={
+              isLoading
+                ? ["#3b1a6e", "#4c1d95"]
+                : ["#6d28d9", "#8b5cf6", "#a78bfa"]
+            }
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[styles.submitButton, { opacity: isLoading ? 0.8 : 1 }]}
+          >
+            {isLoading ? (
+              <View style={styles.loadingRow}>
+                <LoadingDots color="#fff" size={7} spacing={5} />
+                <Text style={styles.submitText}>Analyzing…</Text>
+              </View>
+            ) : (
+              <View style={styles.loadingRow}>
+                <Feather name="zap" size={18} color="#fff" />
+                <Text style={styles.submitText}>Roast Me</Text>
+              </View>
+            )}
+          </LinearGradient>
+        </TouchableOpacity>
+      </Animated.View>
     </View>
   );
 }
@@ -385,16 +445,17 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   selectorButton: {
+    flex: 1,
     borderRadius: 12,
     borderWidth: 1,
     padding: 14,
-    gap: 4,
+    gap: 5,
   },
   selectorLabel: {
-    fontSize: 11,
-    fontFamily: "Inter_500Medium",
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
   },
   selectorValueRow: {
     flexDirection: "row",
@@ -408,79 +469,83 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   textAreaContainer: {
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 14,
+    borderWidth: 1.5,
     overflow: "hidden",
   },
   textArea: {
     fontSize: 15,
     fontFamily: "Inter_400Regular",
-    lineHeight: 22,
+    lineHeight: 23,
     padding: 16,
-    minHeight: 140,
-    maxHeight: 220,
+    minHeight: 150,
+    maxHeight: 240,
   },
   charCountRow: {
     paddingHorizontal: 16,
-    paddingBottom: 10,
+    paddingBottom: 12,
     alignItems: "flex-end",
   },
   charCount: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    letterSpacing: 0.2,
   },
   errorBox: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingVertical: 11,
     borderRadius: 10,
+    borderWidth: 1,
   },
   errorText: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
     flex: 1,
+    lineHeight: 18,
   },
   submitButton: {
-    borderRadius: 14,
-    paddingVertical: 18,
+    borderRadius: 16,
+    paddingVertical: 20,
     alignItems: "center",
     justifyContent: "center",
   },
   loadingRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 10,
   },
   submitText: {
     color: "#fff",
     fontSize: 16,
     fontFamily: "Inter_700Bold",
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    backgroundColor: "rgba(0,0,0,0.7)",
     justifyContent: "flex-end",
   },
   modalSheet: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     borderWidth: 1,
-    padding: 20,
-    paddingBottom: Platform.OS === "ios" ? 40 : 24,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: Platform.OS === "ios" ? 44 : 28,
     gap: 8,
   },
   modalHandle: {
-    width: 40,
+    width: 36,
     height: 4,
     borderRadius: 2,
     alignSelf: "center",
-    marginBottom: 8,
+    marginBottom: 12,
   },
   modalTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontFamily: "Inter_700Bold",
     marginBottom: 8,
   },
@@ -488,9 +553,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 13,
+    paddingVertical: 14,
     paddingHorizontal: 14,
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
   },
   modalOptionText: {
@@ -500,11 +565,16 @@ const styles = StyleSheet.create({
   intensityOption: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 13,
+    paddingVertical: 14,
     paddingHorizontal: 14,
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
     gap: 12,
+  },
+  intensityEmoji: {
+    fontSize: 22,
+    width: 28,
+    textAlign: "center",
   },
   intensityLabel: {
     fontSize: 15,
@@ -514,5 +584,6 @@ const styles = StyleSheet.create({
   intensityDesc: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
+    lineHeight: 16,
   },
 });

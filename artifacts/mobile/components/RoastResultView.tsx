@@ -1,10 +1,9 @@
 import { Feather } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  Alert,
-  ScrollView,
+  Animated,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -16,32 +15,69 @@ import { useColors } from "@/hooks/useColors";
 
 interface ResultCardProps {
   icon: string;
-  iconColor: string;
+  accentColor: string;
   title: string;
+  delay?: number;
   children: React.ReactNode;
 }
 
-function ResultCard({ icon, iconColor, title, children }: ResultCardProps) {
+function ResultCard({
+  icon,
+  accentColor,
+  title,
+  delay = 0,
+  children,
+}: ResultCardProps) {
   const colors = useColors();
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(16)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 380,
+        delay,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 380,
+        delay,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
   return (
-    <View
+    <Animated.View
       style={[
         styles.card,
-        { backgroundColor: colors.card, borderColor: colors.border },
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        },
       ]}
     >
-      <View style={styles.cardHeader}>
-        <View
-          style={[styles.cardIconBg, { backgroundColor: iconColor + "20" }]}
-        >
-          <Feather name={icon as any} size={16} color={iconColor} />
+      <View
+        style={[styles.cardAccentBar, { backgroundColor: accentColor }]}
+      />
+      <View style={styles.cardInner}>
+        <View style={styles.cardHeader}>
+          <View
+            style={[styles.cardIconBg, { backgroundColor: accentColor + "18" }]}
+          >
+            <Feather name={icon as any} size={14} color={accentColor} />
+          </View>
+          <Text style={[styles.cardTitle, { color: colors.mutedForeground }]}>
+            {title}
+          </Text>
         </View>
-        <Text style={[styles.cardTitle, { color: colors.mutedForeground }]}>
-          {title}
-        </Text>
+        <View style={styles.cardContent}>{children}</View>
       </View>
-      {children}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -51,137 +87,216 @@ interface Props {
   onNewRoast?: () => void;
 }
 
+const INTENSITY_COLORS: Record<string, string> = {
+  Honest: "#6b7280",
+  Harsh: "#f59e0b",
+  Brutal: "#ef4444",
+  "Career-ending": "#8b5cf6",
+};
+
 export function RoastResultView({ result, meta, onNewRoast }: Props) {
   const colors = useColors();
   const [copied, setCopied] = useState(false);
+  const headerFade = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(headerFade, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   const handleCopy = async () => {
     const text = [
-      `🔥 BRUTAL MIRROR ROAST`,
+      `🔥 BRUTAL MIRROR`,
       meta ? `Category: ${meta.category} | Intensity: ${meta.intensity}` : "",
-      "",
+      ``,
       `💀 THE ROAST`,
       result.brutalRoast,
-      "",
-      `🔬 ACTUAL DIAGNOSIS`,
+      ``,
+      `🔬 DIAGNOSIS`,
       result.actualDiagnosis,
-      "",
+      ``,
       `⚠️ BIGGEST WEAKNESSES`,
       ...result.biggestWeaknesses.map((w, i) => `${i + 1}. ${w}`),
-      "",
+      ``,
       `🔧 3 FIXES`,
       ...result.threeFixes.map((f, i) => `${i + 1}. ${f}`),
-      "",
+      ``,
       `✨ IMPROVED VERSION`,
       result.improvedVersion,
     ]
-      .filter((l) => l !== null)
-      .join("\n");
+      .join("\n")
+      .trim();
 
     await Clipboard.setStringAsync(text);
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), 2500);
   };
+
+  const intensityColor = meta
+    ? (INTENSITY_COLORS[meta.intensity] ?? colors.primary)
+    : colors.primary;
 
   return (
     <View style={styles.container}>
-      <View style={styles.topRow}>
-        <Text style={[styles.heading, { color: colors.foreground }]}>
-          Your Roast
-        </Text>
-        <View style={styles.actionRow}>
-          <TouchableOpacity
-            style={[
-              styles.iconBtn,
-              { backgroundColor: colors.card, borderColor: colors.border },
-            ]}
-            onPress={handleCopy}
-          >
-            <Feather
-              name={copied ? "check" : "copy"}
-              size={16}
-              color={copied ? "#22c55e" : colors.mutedForeground}
-            />
-          </TouchableOpacity>
-          {onNewRoast && (
+      <Animated.View style={[styles.topSection, { opacity: headerFade }]}>
+        <View style={styles.resultHeadingRow}>
+          <View>
+            <Text style={[styles.resultLabel, { color: colors.mutedForeground }]}>
+              YOUR ROAST
+            </Text>
+            {meta && (
+              <View style={styles.metaRow}>
+                <View
+                  style={[
+                    styles.metaBadge,
+                    { backgroundColor: colors.primary + "18" },
+                  ]}
+                >
+                  <Text style={[styles.metaText, { color: colors.primary }]}>
+                    {meta.category}
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.metaBadge,
+                    { backgroundColor: intensityColor + "18" },
+                  ]}
+                >
+                  <Text style={[styles.metaText, { color: intensityColor }]}>
+                    {meta.intensity}
+                  </Text>
+                </View>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.actionRow}>
             <TouchableOpacity
               style={[
-                styles.newRoastBtn,
-                { backgroundColor: colors.primary + "20", borderColor: colors.primary + "40" },
+                styles.iconBtn,
+                {
+                  backgroundColor: copied
+                    ? "#22c55e18"
+                    : colors.card,
+                  borderColor: copied ? "#22c55e40" : colors.border,
+                },
               ]}
-              onPress={onNewRoast}
+              onPress={handleCopy}
+              activeOpacity={0.7}
             >
-              <Feather name="refresh-cw" size={14} color={colors.primary} />
-              <Text style={[styles.newRoastText, { color: colors.primary }]}>
-                New Roast
-              </Text>
+              <Feather
+                name={copied ? "check" : "copy"}
+                size={15}
+                color={copied ? "#22c55e" : colors.mutedForeground}
+              />
             </TouchableOpacity>
-          )}
-        </View>
-      </View>
 
-      {meta && (
-        <View style={styles.metaRow}>
-          <View
-            style={[styles.metaBadge, { backgroundColor: colors.primary + "20" }]}
-          >
-            <Text style={[styles.metaText, { color: colors.primary }]}>
-              {meta.category}
-            </Text>
-          </View>
-          <View
-            style={[styles.metaBadge, { backgroundColor: colors.muted }]}
-          >
-            <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
-              {meta.intensity}
-            </Text>
+            {onNewRoast && (
+              <TouchableOpacity
+                style={[
+                  styles.newRoastBtn,
+                  {
+                    backgroundColor: colors.primary + "18",
+                    borderColor: colors.primary + "35",
+                  },
+                ]}
+                onPress={onNewRoast}
+                activeOpacity={0.7}
+              >
+                <Feather name="refresh-cw" size={13} color={colors.primary} />
+                <Text style={[styles.newRoastText, { color: colors.primary }]}>
+                  New Roast
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
-      )}
+      </Animated.View>
 
-      <ResultCard icon="zap" iconColor="#ef4444" title="THE ROAST">
+      <ResultCard
+        icon="zap"
+        accentColor="#ef4444"
+        title="THE ROAST"
+        delay={0}
+      >
         <Text style={[styles.roastText, { color: colors.foreground }]}>
           {result.brutalRoast}
         </Text>
       </ResultCard>
 
-      <ResultCard icon="activity" iconColor="#f59e0b" title="ACTUAL DIAGNOSIS">
+      <ResultCard
+        icon="activity"
+        accentColor="#f59e0b"
+        title="ACTUAL DIAGNOSIS"
+        delay={60}
+      >
         <Text style={[styles.bodyText, { color: colors.foreground }]}>
           {result.actualDiagnosis}
         </Text>
       </ResultCard>
 
-      <ResultCard icon="alert-triangle" iconColor="#ef4444" title="BIGGEST WEAKNESSES">
+      <ResultCard
+        icon="alert-triangle"
+        accentColor="#ef4444"
+        title="BIGGEST WEAKNESSES"
+        delay={120}
+      >
         {result.biggestWeaknesses.map((w, i) => (
           <View key={i} style={styles.listItem}>
-            <View
-              style={[styles.listDot, { backgroundColor: "#ef4444" }]}
-            />
-            <Text style={[styles.bodyText, { color: colors.foreground, flex: 1 }]}>
+            <View style={[styles.listDot, { backgroundColor: "#ef4444" }]} />
+            <Text
+              style={[styles.bodyText, { color: colors.foreground, flex: 1 }]}
+            >
               {w}
             </Text>
           </View>
         ))}
       </ResultCard>
 
-      <ResultCard icon="tool" iconColor="#22c55e" title="3 FIXES">
+      <ResultCard
+        icon="tool"
+        accentColor="#22c55e"
+        title="3 FIXES"
+        delay={180}
+      >
         {result.threeFixes.map((f, i) => (
           <View key={i} style={styles.listItem}>
-            <Text style={[styles.fixNumber, { color: "#22c55e" }]}>
-              {i + 1}
-            </Text>
-            <Text style={[styles.bodyText, { color: colors.foreground, flex: 1 }]}>
+            <View
+              style={[styles.fixNumberBadge, { backgroundColor: "#22c55e18" }]}
+            >
+              <Text style={[styles.fixNumber, { color: "#22c55e" }]}>
+                {i + 1}
+              </Text>
+            </View>
+            <Text
+              style={[styles.bodyText, { color: colors.foreground, flex: 1 }]}
+            >
               {f}
             </Text>
           </View>
         ))}
       </ResultCard>
 
-      <ResultCard icon="star" iconColor={colors.primary} title="IMPROVED VERSION">
-        <Text style={[styles.improvedText, { color: colors.foreground }]}>
-          {result.improvedVersion}
-        </Text>
+      <ResultCard
+        icon="star"
+        accentColor={colors.primary}
+        title="IMPROVED VERSION"
+        delay={240}
+      >
+        <View
+          style={[
+            styles.improvedBox,
+            { backgroundColor: colors.primary + "08", borderColor: colors.primary + "25" },
+          ]}
+        >
+          <Text style={[styles.improvedText, { color: colors.foreground }]}>
+            {result.improvedVersion}
+          </Text>
+        </View>
       </ResultCard>
     </View>
   );
@@ -189,22 +304,41 @@ export function RoastResultView({ result, meta, onNewRoast }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    gap: 12,
+    gap: 10,
   },
-  topRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+  topSection: {
     marginBottom: 4,
   },
-  heading: {
-    fontSize: 22,
+  resultHeadingRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  resultLabel: {
+    fontSize: 11,
     fontFamily: "Inter_700Bold",
+    letterSpacing: 1.2,
+    marginBottom: 8,
+  },
+  metaRow: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  metaBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  metaText: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
   },
   actionRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    marginTop: 2,
   },
   iconBtn: {
     width: 36,
@@ -219,7 +353,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 9,
     borderRadius: 10,
     borderWidth: 1,
   },
@@ -227,24 +361,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Inter_600SemiBold",
   },
-  metaRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 4,
-  },
-  metaBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  metaText: {
-    fontSize: 12,
-    fontFamily: "Inter_500Medium",
-  },
   card: {
     borderRadius: 14,
     borderWidth: 1,
+    overflow: "hidden",
+    flexDirection: "row",
+  },
+  cardAccentBar: {
+    width: 3,
+    borderRadius: 2,
+  },
+  cardInner: {
+    flex: 1,
     padding: 16,
+    paddingLeft: 14,
     gap: 12,
   },
   cardHeader: {
@@ -253,22 +383,25 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   cardIconBg: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 7,
     alignItems: "center",
     justifyContent: "center",
   },
   cardTitle: {
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: "Inter_700Bold",
-    letterSpacing: 1,
+    letterSpacing: 1.2,
     textTransform: "uppercase",
+  },
+  cardContent: {
+    gap: 10,
   },
   roastText: {
     fontSize: 15,
     fontFamily: "Inter_500Medium",
-    lineHeight: 24,
+    lineHeight: 25,
   },
   bodyText: {
     fontSize: 14,
@@ -281,21 +414,34 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   listDot: {
-    width: 6,
-    height: 6,
+    width: 5,
+    height: 5,
     borderRadius: 3,
-    marginTop: 8,
+    marginTop: 9,
+    flexShrink: 0,
+  },
+  fixNumberBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 1,
+    flexShrink: 0,
   },
   fixNumber: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: "Inter_700Bold",
-    width: 18,
-    marginTop: 1,
+  },
+  improvedBox: {
+    borderRadius: 10,
+    borderWidth: 1,
+    padding: 14,
   },
   improvedText: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
-    lineHeight: 22,
+    lineHeight: 23,
     fontStyle: "italic",
   },
 });
