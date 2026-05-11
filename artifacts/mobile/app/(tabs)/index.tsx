@@ -3,6 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useRef } from "react";
 import {
+  Image,
   Platform,
   ScrollView,
   StyleSheet,
@@ -10,12 +11,16 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { type RoastFormHandle, RoastForm } from "@/components/RoastForm";
 import { RoastResultView } from "@/components/RoastResultView";
 import { useRoast } from "@/context/RoastContext";
 import { useColors } from "@/hooks/useColors";
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const APP_ICON = require("@/assets/images/icon.png") as number;
 
 export default function HomeScreen() {
   const colors = useColors();
@@ -64,12 +69,7 @@ export default function HomeScreen() {
       >
         <View style={styles.headerLeft}>
           <View style={styles.logoRow}>
-            <LinearGradient
-              colors={["#7c3aed", "#a78bfa"]}
-              style={styles.logoGradient}
-            >
-              <Text style={styles.logoEmoji}>🪞</Text>
-            </LinearGradient>
+            <Image source={APP_ICON} style={styles.logoImage} />
             <View>
               <Text style={[styles.appName, { color: colors.foreground }]}>
                 Brutal Mirror
@@ -217,15 +217,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
-  logoGradient: {
+  logoImage: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  logoEmoji: {
-    fontSize: 18,
   },
   appName: {
     fontSize: 18,
