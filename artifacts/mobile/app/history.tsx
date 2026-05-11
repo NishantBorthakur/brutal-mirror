@@ -6,6 +6,7 @@ import React, { useState } from "react";
 import {
   Alert,
   FlatList,
+  Image,
   Platform,
   ScrollView,
   StyleSheet,
@@ -168,7 +169,11 @@ export default function HistoryScreen() {
             colors={["#8b5cf620", "#8b5cf608"]}
             style={styles.emptyIconBg}
           >
-            <Text style={styles.emptyEmoji}>🪞</Text>
+            <Image
+              source={require("@/assets/images/icon.png")}
+              style={styles.emptyIcon}
+              resizeMode="contain"
+            />
           </LinearGradient>
           <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
             Nothing here yet
@@ -218,7 +223,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    alignItems: "flex-end",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingBottom: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -273,8 +278,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 4,
   },
-  emptyEmoji: {
-    fontSize: 36,
+  emptyIcon: {
+    width: 48,
+    height: 48,
   },
   emptyTitle: {
     fontSize: 22,
