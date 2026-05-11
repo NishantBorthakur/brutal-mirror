@@ -61,13 +61,14 @@ function ResultCard({
         },
       ]}
     >
-      <View
-        style={[styles.cardAccentBar, { backgroundColor: accentColor }]}
-      />
+      <View style={[styles.cardAccentBar, { backgroundColor: accentColor }]} />
       <View style={styles.cardInner}>
         <View style={styles.cardHeader}>
           <View
-            style={[styles.cardIconBg, { backgroundColor: accentColor + "18" }]}
+            style={[
+              styles.cardIconBg,
+              { backgroundColor: accentColor + "18" },
+            ]}
           >
             <Feather name={icon as any} size={14} color={accentColor} />
           </View>
@@ -81,9 +82,47 @@ function ResultCard({
   );
 }
 
+function NewRoastButton({
+  onPress,
+  variant = "outline",
+}: {
+  onPress?: () => void;
+  variant?: "outline" | "filled";
+}) {
+  const colors = useColors();
+  if (!onPress) return null;
+  return (
+    <TouchableOpacity
+      style={[
+        styles.newRoastButton,
+        variant === "filled"
+          ? {
+              backgroundColor: colors.primary + "18",
+              borderColor: colors.primary + "40",
+            }
+          : {
+              backgroundColor: "transparent",
+              borderColor: colors.border,
+            },
+      ]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <Feather name="refresh-cw" size={15} color={colors.primary} />
+      <Text style={[styles.newRoastButtonText, { color: colors.primary }]}>
+        Start New Roast
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 interface Props {
   result: RoastResult;
-  meta?: { category: string; intensity: string } | null;
+  meta?: {
+    category: string;
+    intensity: string;
+    originalPrompt?: string;
+  } | null;
   onNewRoast?: () => void;
 }
 
@@ -108,7 +147,7 @@ export function RoastResultView({ result, meta, onNewRoast }: Props) {
   }, []);
 
   const handleCopy = async () => {
-    const text = [
+    const lines: string[] = [
       `🔥 BRUTAL MIRROR`,
       meta ? `Category: ${meta.category} | Intensity: ${meta.intensity}` : "",
       ``,
@@ -126,11 +165,9 @@ export function RoastResultView({ result, meta, onNewRoast }: Props) {
       ``,
       `✨ IMPROVED VERSION`,
       result.improvedVersion,
-    ]
-      .join("\n")
-      .trim();
+    ];
 
-    await Clipboard.setStringAsync(text);
+    await Clipboard.setStringAsync(lines.join("\n").trim());
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
@@ -142,9 +179,10 @@ export function RoastResultView({ result, meta, onNewRoast }: Props) {
 
   return (
     <View style={styles.container}>
-      <Animated.View style={[styles.topSection, { opacity: headerFade }]}>
-        <View style={styles.resultHeadingRow}>
-          <View>
+      {/* ── Header: label + badges on left, copy button on right ── */}
+      <Animated.View style={{ opacity: headerFade }}>
+        <View style={styles.headerRow}>
+          <View style={styles.headerLeft}>
             <Text style={[styles.resultLabel, { color: colors.mutedForeground }]}>
               YOUR ROAST
             </Text>
@@ -174,55 +212,53 @@ export function RoastResultView({ result, meta, onNewRoast }: Props) {
             )}
           </View>
 
-          <View style={styles.actionRow}>
-            <TouchableOpacity
+          {/* Only Copy button in top-right */}
+          <TouchableOpacity
+            style={[
+              styles.copyBtn,
+              {
+                backgroundColor: copied ? "#22c55e18" : colors.card,
+                borderColor: copied ? "#22c55e40" : colors.border,
+              },
+            ]}
+            onPress={handleCopy}
+            activeOpacity={0.7}
+          >
+            <Feather
+              name={copied ? "check" : "copy"}
+              size={15}
+              color={copied ? "#22c55e" : colors.mutedForeground}
+            />
+            <Text
               style={[
-                styles.iconBtn,
-                {
-                  backgroundColor: copied
-                    ? "#22c55e18"
-                    : colors.card,
-                  borderColor: copied ? "#22c55e40" : colors.border,
-                },
+                styles.copyBtnText,
+                { color: copied ? "#22c55e" : colors.mutedForeground },
               ]}
-              onPress={handleCopy}
-              activeOpacity={0.7}
             >
-              <Feather
-                name={copied ? "check" : "copy"}
-                size={15}
-                color={copied ? "#22c55e" : colors.mutedForeground}
-              />
-            </TouchableOpacity>
-
-            {onNewRoast && (
-              <TouchableOpacity
-                style={[
-                  styles.newRoastBtn,
-                  {
-                    backgroundColor: colors.primary + "18",
-                    borderColor: colors.primary + "35",
-                  },
-                ]}
-                onPress={onNewRoast}
-                activeOpacity={0.7}
-              >
-                <Feather name="refresh-cw" size={13} color={colors.primary} />
-                <Text style={[styles.newRoastText, { color: colors.primary }]}>
-                  New Roast
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
+              {copied ? "Copied!" : "Copy"}
+            </Text>
+          </TouchableOpacity>
         </View>
+
+        {/* New Roast button — its own row below the header */}
+        <NewRoastButton onPress={onNewRoast} variant="outline" />
       </Animated.View>
 
-      <ResultCard
-        icon="zap"
-        accentColor="#ef4444"
-        title="THE ROAST"
-        delay={0}
-      >
+      {/* ── Original Prompt card (if available) ── */}
+      {meta?.originalPrompt && (
+        <ResultCard
+          icon="file-text"
+          accentColor="#6b7280"
+          title="ORIGINAL PROMPT"
+          delay={0}
+        >
+          <Text style={[styles.promptText, { color: colors.mutedForeground }]}>
+            {meta.originalPrompt}
+          </Text>
+        </ResultCard>
+      )}
+
+      <ResultCard icon="zap" accentColor="#ef4444" title="THE ROAST" delay={60}>
         <Text style={[styles.roastText, { color: colors.foreground }]}>
           {result.brutalRoast}
         </Text>
@@ -232,7 +268,7 @@ export function RoastResultView({ result, meta, onNewRoast }: Props) {
         icon="activity"
         accentColor="#f59e0b"
         title="ACTUAL DIAGNOSIS"
-        delay={60}
+        delay={120}
       >
         <Text style={[styles.bodyText, { color: colors.foreground }]}>
           {result.actualDiagnosis}
@@ -243,7 +279,7 @@ export function RoastResultView({ result, meta, onNewRoast }: Props) {
         icon="alert-triangle"
         accentColor="#ef4444"
         title="BIGGEST WEAKNESSES"
-        delay={120}
+        delay={180}
       >
         {result.biggestWeaknesses.map((w, i) => (
           <View key={i} style={styles.listItem}>
@@ -261,12 +297,15 @@ export function RoastResultView({ result, meta, onNewRoast }: Props) {
         icon="tool"
         accentColor="#22c55e"
         title="3 FIXES"
-        delay={180}
+        delay={240}
       >
         {result.threeFixes.map((f, i) => (
           <View key={i} style={styles.listItem}>
             <View
-              style={[styles.fixNumberBadge, { backgroundColor: "#22c55e18" }]}
+              style={[
+                styles.fixNumberBadge,
+                { backgroundColor: "#22c55e18" },
+              ]}
             >
               <Text style={[styles.fixNumber, { color: "#22c55e" }]}>
                 {i + 1}
@@ -285,12 +324,15 @@ export function RoastResultView({ result, meta, onNewRoast }: Props) {
         icon="star"
         accentColor={colors.primary}
         title="IMPROVED VERSION"
-        delay={240}
+        delay={300}
       >
         <View
           style={[
             styles.improvedBox,
-            { backgroundColor: colors.primary + "08", borderColor: colors.primary + "25" },
+            {
+              backgroundColor: colors.primary + "08",
+              borderColor: colors.primary + "25",
+            },
           ]}
         >
           <Text style={[styles.improvedText, { color: colors.foreground }]}>
@@ -298,6 +340,9 @@ export function RoastResultView({ result, meta, onNewRoast }: Props) {
           </Text>
         </View>
       </ResultCard>
+
+      {/* ── Bottom New Roast button ── */}
+      <NewRoastButton onPress={onNewRoast} variant="filled" />
     </View>
   );
 }
@@ -306,14 +351,16 @@ const styles = StyleSheet.create({
   container: {
     gap: 10,
   },
-  topSection: {
-    marginBottom: 4,
-  },
-  resultHeadingRow: {
+  headerRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 8,
+    gap: 12,
+    marginBottom: 10,
+  },
+  headerLeft: {
+    flex: 1,
+    minWidth: 0,
   },
   resultLabel: {
     fontSize: 11,
@@ -324,6 +371,7 @@ const styles = StyleSheet.create({
   metaRow: {
     flexDirection: "row",
     gap: 6,
+    flexWrap: "wrap",
   },
   metaBadge: {
     paddingHorizontal: 10,
@@ -334,21 +382,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Inter_600SemiBold",
   },
-  actionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 2,
-  },
-  iconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  newRoastBtn: {
+  copyBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
@@ -356,9 +390,26 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     borderRadius: 10,
     borderWidth: 1,
+    flexShrink: 0,
+    minHeight: 40,
   },
-  newRoastText: {
+  copyBtnText: {
     fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+  },
+  newRoastButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 14,
+    borderWidth: 1,
+    minHeight: 48,
+  },
+  newRoastButtonText: {
+    fontSize: 14,
     fontFamily: "Inter_600SemiBold",
   },
   card: {
@@ -369,13 +420,13 @@ const styles = StyleSheet.create({
   },
   cardAccentBar: {
     width: 3,
-    borderRadius: 2,
   },
   cardInner: {
     flex: 1,
     padding: 16,
     paddingLeft: 14,
     gap: 12,
+    minWidth: 0,
   },
   cardHeader: {
     flexDirection: "row",
@@ -388,15 +439,23 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
   cardTitle: {
     fontSize: 10,
     fontFamily: "Inter_700Bold",
     letterSpacing: 1.2,
     textTransform: "uppercase",
+    flexShrink: 1,
   },
   cardContent: {
     gap: 10,
+  },
+  promptText: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 21,
+    fontStyle: "italic",
   },
   roastText: {
     fontSize: 15,

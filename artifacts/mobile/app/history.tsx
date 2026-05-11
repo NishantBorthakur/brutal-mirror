@@ -53,6 +53,7 @@ export default function HistoryScreen() {
     );
   };
 
+  // ── Detail view ──
   if (selectedItem) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -76,15 +77,19 @@ export default function HistoryScreen() {
           >
             <Feather name="arrow-left" size={17} color={colors.foreground} />
           </TouchableOpacity>
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={[styles.title, { color: colors.foreground }]}>
               Past Roast
             </Text>
-            <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
+            <Text
+              style={[styles.subtitle, { color: colors.mutedForeground }]}
+              numberOfLines={1}
+            >
               {selectedItem.category} · {selectedItem.intensity}
             </Text>
           </View>
         </View>
+
         <ScrollView
           contentContainerStyle={[
             styles.scrollPad,
@@ -97,6 +102,9 @@ export default function HistoryScreen() {
             meta={{
               category: selectedItem.category,
               intensity: selectedItem.intensity,
+              // show full original prompt if stored; fall back to preview for old items
+              originalPrompt:
+                selectedItem.originalPrompt ?? selectedItem.contentPreview,
             }}
           />
         </ScrollView>
@@ -104,6 +112,7 @@ export default function HistoryScreen() {
     );
   }
 
+  // ── List view ──
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <View
@@ -169,7 +178,7 @@ export default function HistoryScreen() {
             to 20 sessions.
           </Text>
           <TouchableOpacity
-            style={[styles.startBtn]}
+            style={styles.startBtn}
             onPress={() => router.back()}
             activeOpacity={0.85}
           >
@@ -222,6 +231,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
   title: {
     fontSize: 20,
@@ -240,6 +250,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
   scrollPad: {
     padding: 20,

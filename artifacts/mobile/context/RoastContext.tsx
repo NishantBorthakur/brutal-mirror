@@ -21,6 +21,7 @@ export interface RoastHistoryItem {
   category: string;
   intensity: string;
   contentPreview: string;
+  originalPrompt?: string; // full original input — optional for backward compat
   result: RoastResult;
   createdAt: string;
 }
@@ -56,7 +57,6 @@ export function RoastProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Use a ref to avoid stale closure on history inside generateRoast
   const historyRef = useRef<RoastHistoryItem[]>([]);
 
   useEffect(() => {
@@ -102,7 +102,6 @@ export function RoastProvider({ children }: { children: React.ReactNode }) {
 
         const result = data as RoastResult;
 
-        // Validate essential fields to catch malformed responses
         if (!result.brutalRoast || !result.actualDiagnosis) {
           throw new Error("AI returned an incomplete response. Try again.");
         }
@@ -116,15 +115,12 @@ export function RoastProvider({ children }: { children: React.ReactNode }) {
           intensity,
           contentPreview:
             content.slice(0, 80) + (content.length > 80 ? "…" : ""),
+          originalPrompt: content, // store full prompt
           result,
           createdAt: new Date().toISOString(),
         };
 
-        // Use ref to avoid stale closure
-        const newHistory = [newItem, ...historyRef.current].slice(
-          0,
-          MAX_HISTORY
-        );
+        const newHistory = [newItem, ...historyRef.current].slice(0, MAX_HISTORY);
         historyRef.current = newHistory;
         setHistory(newHistory);
         await saveHistory(newHistory);

@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { RoastForm } from "@/components/RoastForm";
+import { type RoastFormHandle, RoastForm } from "@/components/RoastForm";
 import { RoastResultView } from "@/components/RoastResultView";
 import { useRoast } from "@/context/RoastContext";
 import { useColors } from "@/hooks/useColors";
@@ -22,8 +22,10 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { currentResult, currentMeta, clearResult, history } = useRoast();
+
   const scrollRef = useRef<ScrollView>(null);
   const resultYRef = useRef<number>(0);
+  const formRef = useRef<RoastFormHandle>(null);
 
   const scrollToResult = () => {
     setTimeout(() => {
@@ -34,11 +36,22 @@ export default function HomeScreen() {
     }, 120);
   };
 
+  const scrollToTop = () => {
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  };
+
+  const handleNewRoast = () => {
+    formRef.current?.reset(); // clear textarea + validation
+    clearResult();            // clear the result state
+    scrollToTop();            // scroll back to the form
+  };
+
   const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
+      {/* ── Header ── */}
       <View
         style={[
           styles.header,
@@ -61,7 +74,9 @@ export default function HomeScreen() {
               <Text style={[styles.appName, { color: colors.foreground }]}>
                 Brutal Mirror
               </Text>
-              <Text style={[styles.appTagline, { color: colors.mutedForeground }]}>
+              <Text
+                style={[styles.appTagline, { color: colors.mutedForeground }]}
+              >
                 Get roasted. Then get better.
               </Text>
             </View>
@@ -71,10 +86,7 @@ export default function HomeScreen() {
         <TouchableOpacity
           style={[
             styles.historyBtn,
-            {
-              borderColor: colors.border,
-              backgroundColor: colors.card,
-            },
+            { borderColor: colors.border, backgroundColor: colors.card },
           ]}
           onPress={() => router.push("/history")}
           activeOpacity={0.7}
@@ -82,7 +94,10 @@ export default function HomeScreen() {
           <Feather name="clock" size={17} color={colors.mutedForeground} />
           {history.length > 0 && (
             <View
-              style={[styles.historyBadge, { backgroundColor: colors.primary }]}
+              style={[
+                styles.historyBadge,
+                { backgroundColor: colors.primary },
+              ]}
             >
               <Text style={styles.historyBadgeText}>
                 {history.length > 9 ? "9+" : history.length}
@@ -92,17 +107,19 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* ── Scroll body ── */}
       <ScrollView
         ref={scrollRef}
         style={{ flex: 1 }}
         contentContainerStyle={[
           styles.scroll,
-          { paddingBottom: bottomPad + 24 },
+          { paddingBottom: bottomPad + 32 },
         ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
       >
+        {/* Hero — only shown when no result */}
         {!currentResult && (
           <View style={styles.hero}>
             <LinearGradient
@@ -119,16 +136,16 @@ export default function HomeScreen() {
                 { color: colors.mutedForeground },
               ]}
             >
-              Paste your idea, bio, resume, profile, or plan.{"\n"}Brutal Mirror
-              will destroy it — and rebuild it sharper.
+              Paste your idea, bio, resume, profile, or plan.{"\n"}Brutal
+              Mirror will destroy it — and rebuild it sharper.
             </Text>
           </View>
         )}
 
-        <View style={styles.formSection}>
-          <RoastForm onResultReady={scrollToResult} />
-        </View>
+        {/* Form */}
+        <RoastForm ref={formRef} onResultReady={scrollToResult} />
 
+        {/* Result section — extra top spacing via marginTop */}
         {currentResult && (
           <View
             style={styles.resultSection}
@@ -138,7 +155,10 @@ export default function HomeScreen() {
           >
             <View style={styles.resultDivider}>
               <View
-                style={[styles.dividerLine, { backgroundColor: colors.border }]}
+                style={[
+                  styles.dividerLine,
+                  { backgroundColor: colors.border },
+                ]}
               />
               <View
                 style={[
@@ -150,13 +170,25 @@ export default function HomeScreen() {
                 <Text style={styles.dividerText}>RESULT</Text>
               </View>
               <View
-                style={[styles.dividerLine, { backgroundColor: colors.border }]}
+                style={[
+                  styles.dividerLine,
+                  { backgroundColor: colors.border },
+                ]}
               />
             </View>
+
             <RoastResultView
               result={currentResult}
-              meta={currentMeta}
-              onNewRoast={clearResult}
+              meta={
+                currentMeta
+                  ? {
+                      category: currentMeta.category,
+                      intensity: currentMeta.intensity,
+                      originalPrompt: currentMeta.content,
+                    }
+                  : null
+              }
+              onNewRoast={handleNewRoast}
             />
           </View>
         )}
@@ -232,9 +264,9 @@ const styles = StyleSheet.create({
   scroll: {
     paddingHorizontal: 20,
     paddingTop: 24,
+    gap: 20,
   },
   hero: {
-    marginBottom: 28,
     position: "relative",
     overflow: "hidden",
     borderRadius: 16,
@@ -259,10 +291,11 @@ const styles = StyleSheet.create({
     textAlign: "left",
     lineHeight: 22,
   },
-  formSection: {},
   resultSection: {
     gap: 16,
-    marginTop: 8,
+    // Extra vertical breathing room above the result divider
+    marginTop: 12,
+    paddingTop: 8,
   },
   resultDivider: {
     flexDirection: "row",

@@ -1,7 +1,12 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useRef, useState } from "react";
+import React, {
+  forwardRef,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import {
   Animated,
   Modal,
@@ -17,6 +22,10 @@ import {
 import { useRoast } from "@/context/RoastContext";
 import { useColors } from "@/hooks/useColors";
 import { LoadingDots } from "./LoadingDots";
+
+export interface RoastFormHandle {
+  reset: () => void;
+}
 
 const CATEGORIES = [
   "Instagram Bio",
@@ -207,234 +216,247 @@ function IntensityPickerModal({
   );
 }
 
-interface RoastFormProps {
+export interface RoastFormProps {
   onResultReady?: () => void;
 }
 
-export function RoastForm({ onResultReady }: RoastFormProps) {
-  const colors = useColors();
-  const { generateRoast, isLoading, error } = useRoast();
+export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
+  function RoastForm({ onResultReady }, ref) {
+    const colors = useColors();
+    const { generateRoast, isLoading, error } = useRoast();
 
-  const [category, setCategory] = useState(CATEGORIES[0]);
-  const [intensity, setIntensity] = useState("Brutal");
-  const [content, setContent] = useState("");
-  const [validationError, setValidationError] = useState<string | null>(null);
-  const [isFocused, setIsFocused] = useState(false);
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [showIntensityModal, setShowIntensityModal] = useState(false);
+    const [category, setCategory] = useState(CATEGORIES[0]);
+    const [intensity, setIntensity] = useState("Brutal");
+    const [content, setContent] = useState("");
+    const [validationError, setValidationError] = useState<string | null>(null);
+    const [isFocused, setIsFocused] = useState(false);
+    const [showCategoryModal, setShowCategoryModal] = useState(false);
+    const [showIntensityModal, setShowIntensityModal] = useState(false);
 
-  const inputRef = useRef<TextInput>(null);
-  const buttonScale = useRef(new Animated.Value(1)).current;
+    const buttonScale = useRef(new Animated.Value(1)).current;
 
-  const charCount = content.length;
-  const isOverLimit = charCount > MAX_LENGTH;
-  const isTooShort = charCount < MIN_LENGTH && charCount > 0;
-  const currentIntensity = INTENSITIES.find((i) => i.label === intensity);
+    // Expose reset() to parent via ref
+    useImperativeHandle(ref, () => ({
+      reset: () => {
+        setContent("");
+        setValidationError(null);
+      },
+    }));
 
-  const pressIn = () => {
-    Animated.spring(buttonScale, {
-      toValue: 0.97,
-      useNativeDriver: true,
-      speed: 40,
-    }).start();
-  };
+    const charCount = content.length;
+    const isOverLimit = charCount > MAX_LENGTH;
+    const isTooShort = charCount < MIN_LENGTH && charCount > 0;
+    const currentIntensity = INTENSITIES.find((i) => i.label === intensity);
 
-  const pressOut = () => {
-    Animated.spring(buttonScale, {
-      toValue: 1,
-      useNativeDriver: true,
-      speed: 40,
-    }).start();
-  };
+    const pressIn = () =>
+      Animated.spring(buttonScale, {
+        toValue: 0.97,
+        useNativeDriver: true,
+        speed: 40,
+      }).start();
 
-  const handleSubmit = async () => {
-    if (charCount < MIN_LENGTH) {
-      setValidationError(`Enter at least ${MIN_LENGTH} characters`);
-      return;
-    }
-    if (isOverLimit) {
-      setValidationError(`Maximum ${MAX_LENGTH} characters allowed`);
-      return;
-    }
-    setValidationError(null);
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await generateRoast(category, intensity, content);
-    onResultReady?.();
-  };
+    const pressOut = () =>
+      Animated.spring(buttonScale, {
+        toValue: 1,
+        useNativeDriver: true,
+        speed: 40,
+      }).start();
 
-  const textAreaBorderColor = (() => {
-    if (validationError || error || isOverLimit) return colors.destructive;
-    if (isFocused) return colors.primary;
-    if (isTooShort) return colors.primary + "50";
-    return colors.border;
-  })();
+    const handleSubmit = async () => {
+      if (charCount < MIN_LENGTH) {
+        setValidationError(`Enter at least ${MIN_LENGTH} characters`);
+        return;
+      }
+      if (isOverLimit) {
+        setValidationError(`Maximum ${MAX_LENGTH} characters allowed`);
+        return;
+      }
+      setValidationError(null);
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      await generateRoast(category, intensity, content);
+      onResultReady?.();
+    };
 
-  return (
-    <View style={styles.container}>
-      <PickerModal
-        visible={showCategoryModal}
-        title="What are we roasting?"
-        options={CATEGORIES}
-        selected={category}
-        onSelect={setCategory}
-        onClose={() => setShowCategoryModal(false)}
-      />
-      <IntensityPickerModal
-        visible={showIntensityModal}
-        selected={intensity}
-        onSelect={setIntensity}
-        onClose={() => setShowIntensityModal(false)}
-      />
+    const textAreaBorderColor = (() => {
+      if (validationError || error || isOverLimit) return colors.destructive;
+      if (isFocused) return colors.primary;
+      if (isTooShort) return colors.primary + "50";
+      return colors.border;
+    })();
 
-      <View style={styles.row}>
-        <TouchableOpacity
-          style={[
-            styles.selectorButton,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
-          onPress={() => setShowCategoryModal(true)}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.selectorLabel, { color: colors.mutedForeground }]}>
-            Category
-          </Text>
-          <View style={styles.selectorValueRow}>
+    return (
+      <View style={styles.container}>
+        <PickerModal
+          visible={showCategoryModal}
+          title="What are we roasting?"
+          options={CATEGORIES}
+          selected={category}
+          onSelect={setCategory}
+          onClose={() => setShowCategoryModal(false)}
+        />
+        <IntensityPickerModal
+          visible={showIntensityModal}
+          selected={intensity}
+          onSelect={setIntensity}
+          onClose={() => setShowIntensityModal(false)}
+        />
+
+        <View style={styles.row}>
+          <TouchableOpacity
+            style={[
+              styles.selectorButton,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+            onPress={() => setShowCategoryModal(true)}
+            activeOpacity={0.7}
+          >
             <Text
-              style={[styles.selectorValue, { color: colors.foreground }]}
-              numberOfLines={1}
+              style={[styles.selectorLabel, { color: colors.mutedForeground }]}
             >
-              {category}
+              Category
             </Text>
-            <Feather
-              name="chevron-down"
-              size={13}
-              color={colors.mutedForeground}
-            />
-          </View>
-        </TouchableOpacity>
+            <View style={styles.selectorValueRow}>
+              <Text
+                style={[styles.selectorValue, { color: colors.foreground }]}
+                numberOfLines={1}
+              >
+                {category}
+              </Text>
+              <Feather
+                name="chevron-down"
+                size={13}
+                color={colors.mutedForeground}
+              />
+            </View>
+          </TouchableOpacity>
 
-        <TouchableOpacity
+          <TouchableOpacity
+            style={[
+              styles.selectorButton,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+            onPress={() => setShowIntensityModal(true)}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[styles.selectorLabel, { color: colors.mutedForeground }]}
+            >
+              Intensity
+            </Text>
+            <View style={styles.selectorValueRow}>
+              <Text
+                style={[
+                  styles.selectorValue,
+                  { color: currentIntensity?.color ?? colors.primary },
+                ]}
+              >
+                {intensity}
+              </Text>
+              <Feather
+                name="chevron-down"
+                size={13}
+                color={colors.mutedForeground}
+              />
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        <View
           style={[
-            styles.selectorButton,
-            { backgroundColor: colors.card, borderColor: colors.border },
+            styles.textAreaContainer,
+            {
+              backgroundColor: colors.card,
+              borderColor: textAreaBorderColor,
+            },
           ]}
-          onPress={() => setShowIntensityModal(true)}
-          activeOpacity={0.7}
         >
-          <Text style={[styles.selectorLabel, { color: colors.mutedForeground }]}>
-            Intensity
-          </Text>
-          <View style={styles.selectorValueRow}>
+          <TextInput
+            style={[styles.textArea, { color: colors.foreground }]}
+            placeholder="Paste what you want brutally judged…"
+            placeholderTextColor={colors.mutedForeground}
+            multiline
+            textAlignVertical="top"
+            value={content}
+            onChangeText={(t) => {
+              setContent(t);
+              setValidationError(null);
+            }}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            maxLength={MAX_LENGTH + 10}
+            selectionColor={colors.primary}
+          />
+          <View style={styles.charCountRow}>
             <Text
               style={[
-                styles.selectorValue,
-                { color: currentIntensity?.color ?? colors.primary },
+                styles.charCount,
+                {
+                  color: isOverLimit
+                    ? colors.destructive
+                    : charCount > MAX_LENGTH * 0.85
+                    ? "#f59e0b"
+                    : colors.mutedForeground,
+                },
               ]}
             >
-              {intensity}
+              {charCount.toLocaleString()}/{MAX_LENGTH.toLocaleString()}
             </Text>
-            <Feather
-              name="chevron-down"
-              size={13}
-              color={colors.mutedForeground}
-            />
           </View>
-        </TouchableOpacity>
-      </View>
+        </View>
 
-      <View
-        style={[
-          styles.textAreaContainer,
-          {
-            backgroundColor: colors.card,
-            borderColor: textAreaBorderColor,
-          },
-        ]}
-      >
-        <TextInput
-          ref={inputRef}
-          style={[styles.textArea, { color: colors.foreground }]}
-          placeholder="Paste what you want brutally judged…"
-          placeholderTextColor={colors.mutedForeground}
-          multiline
-          textAlignVertical="top"
-          value={content}
-          onChangeText={(t) => {
-            setContent(t);
-            setValidationError(null);
-          }}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          maxLength={MAX_LENGTH + 10}
-          selectionColor={colors.primary}
-        />
-        <View style={styles.charCountRow}>
-          <Text
+        {(validationError || error) && (
+          <View
             style={[
-              styles.charCount,
+              styles.errorBox,
               {
-                color: isOverLimit
-                  ? colors.destructive
-                  : charCount > MAX_LENGTH * 0.85
-                  ? "#f59e0b"
-                  : colors.mutedForeground,
+                backgroundColor: colors.destructive + "12",
+                borderColor: colors.destructive + "30",
               },
             ]}
           >
-            {charCount.toLocaleString()}/{MAX_LENGTH.toLocaleString()}
-          </Text>
-        </View>
-      </View>
+            <Feather name="alert-circle" size={14} color={colors.destructive} />
+            <Text style={[styles.errorText, { color: colors.destructive }]}>
+              {validationError || error}
+            </Text>
+          </View>
+        )}
 
-      {(validationError || error) && (
-        <View
-          style={[
-            styles.errorBox,
-            { backgroundColor: colors.destructive + "12", borderColor: colors.destructive + "30" },
-          ]}
-        >
-          <Feather name="alert-circle" size={14} color={colors.destructive} />
-          <Text style={[styles.errorText, { color: colors.destructive }]}>
-            {validationError || error}
-          </Text>
-        </View>
-      )}
-
-      <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
-        <TouchableOpacity
-          onPress={handleSubmit}
-          onPressIn={pressIn}
-          onPressOut={pressOut}
-          disabled={isLoading}
-          activeOpacity={1}
-        >
-          <LinearGradient
-            colors={
-              isLoading
-                ? ["#3b1a6e", "#4c1d95"]
-                : ["#6d28d9", "#8b5cf6", "#a78bfa"]
-            }
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={[styles.submitButton, { opacity: isLoading ? 0.8 : 1 }]}
+        <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+          <TouchableOpacity
+            onPress={handleSubmit}
+            onPressIn={pressIn}
+            onPressOut={pressOut}
+            disabled={isLoading}
+            activeOpacity={1}
           >
-            {isLoading ? (
-              <View style={styles.loadingRow}>
-                <LoadingDots color="#fff" size={7} spacing={5} />
-                <Text style={styles.submitText}>Analyzing…</Text>
-              </View>
-            ) : (
-              <View style={styles.loadingRow}>
-                <Feather name="zap" size={18} color="#fff" />
-                <Text style={styles.submitText}>Roast Me</Text>
-              </View>
-            )}
-          </LinearGradient>
-        </TouchableOpacity>
-      </Animated.View>
-    </View>
-  );
-}
+            <LinearGradient
+              colors={
+                isLoading
+                  ? ["#3b1a6e", "#4c1d95"]
+                  : ["#6d28d9", "#8b5cf6", "#a78bfa"]
+              }
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={[styles.submitButton, { opacity: isLoading ? 0.8 : 1 }]}
+            >
+              {isLoading ? (
+                <View style={styles.loadingRow}>
+                  <LoadingDots color="#fff" size={7} spacing={5} />
+                  <Text style={styles.submitText}>Analyzing…</Text>
+                </View>
+              ) : (
+                <View style={styles.loadingRow}>
+                  <Feather name="zap" size={18} color="#fff" />
+                  <Text style={styles.submitText}>Roast Me</Text>
+                </View>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
+    );
+  }
+);
 
 const styles = StyleSheet.create({
   container: {
@@ -493,7 +515,7 @@ const styles = StyleSheet.create({
   },
   errorBox: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: 8,
     paddingHorizontal: 14,
     paddingVertical: 11,
@@ -504,7 +526,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Inter_400Regular",
     flex: 1,
-    lineHeight: 18,
+    lineHeight: 19,
   },
   submitButton: {
     borderRadius: 16,

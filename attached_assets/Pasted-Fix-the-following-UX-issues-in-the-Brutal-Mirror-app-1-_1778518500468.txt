@@ -1,0 +1,42 @@
+Fix the following UX issues in the Brutal Mirror app.
+
+1. New Roast button behavior
+- When the user clicks “New Roast”, clear the textarea/input field completely.
+- Also reset validation errors.
+- Reset selected result state if needed.
+- Keep category and intensity selected unless the existing app logic requires resetting them.
+
+2. Result section spacing
+- The result section currently appears too close to the “Roast Me” / generate button.
+- Add more vertical spacing between the generate button and the result section.
+- Make the spacing look clean on mobile and desktop.
+
+3. History should store original prompt
+- When saving a roast to localStorage/history, also store the full original user input/prompt.
+- In the history item preview, show a short preview of the original prompt.
+- When opening a saved roast, show the full original prompt somewhere clearly, preferably in a card titled “Original Prompt”.
+- Make sure older history items without original prompts do not break the app.
+
+4. Fix result action button layout
+- The “New Roast” button is getting pushed off-screen when the first result section is long.
+- In the top result header, keep only the “Copy Result” button aligned to the right.
+- Move the “New Roast” button to its own row below the top result header.
+- Also add another “New Roast” button at the very bottom after all result cards.
+- Make sure both New Roast buttons perform the same action:
+  - clear input
+  - reset result
+  - scroll back to the generator form
+- Ensure buttons wrap properly on small mobile screens and never overflow horizontally.
+
+5. Mobile layout polish
+- Check all result cards for overflow issues.
+- Ensure long text wraps properly.
+- Ensure action buttons have proper spacing and large tap targets.
+- Make sure the layout does not require horizontal scrolling.
+
+After making changes:
+- Test generating a roast.
+- Test clicking New Roast from the result area.
+- Test saving/opening history.
+- Test copy result.
+- Confirm there are no console errors.
