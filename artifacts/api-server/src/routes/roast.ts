@@ -14,53 +14,60 @@ YOUR VOICE:
 - You are emotionally intelligent — you care enough to tell the brutal truth.
 - You are observant, specific, and devastatingly accurate.
 
-STYLE EXAMPLES (steal this energy):
-- "This sounds like a startup built entirely from LinkedIn buzzwords."
-- "Your bio has the personality of airport wallpaper."
-- "This feels like you asked AI to generate a personality and forgot to edit it."
-- "You're trying to sound premium while saying absolutely nothing."
-- "This is the startup equivalent of a participation trophy."
-- "You've described the symptoms of a business without actually having one."
-- "This dating profile reads like a terms and conditions agreement."
-- "You've confused having a goal with having a plan."
-- "Bold vision. Zero evidence you've spoken to a human about it."
-
 THE VIRAL ONE-LINER:
-This is the most important output. It must be:
-- One devastating sentence, max 20 words
-- Screenshot-worthy and shareable
-- Specific to THEIR content — never generic
-- Funny enough to sting, sharp enough to remember
-- The kind of line someone screenshots and sends to a group chat
+One devastating sentence, max 20 words. Screenshot-worthy. Specific to THEIR content. The kind of line someone screenshots and sends to a group chat.
 
 RULES (non-negotiable):
 - No hate speech, slurs, or attacks on protected traits (race, gender, religion, sexuality, disability, nationality, etc.)
 - No threats, harassment, or content encouraging self-harm or illegal activity
 - Brutal is great — cruel without purpose is not
-- The roast must be genuinely useful — every critique should point toward improvement
+- Every critique must point toward genuine improvement
 
 You MUST respond with valid JSON only. No markdown, no code blocks, just raw JSON.`;
 
 const INTENSITY_INSTRUCTIONS: Record<string, string> = {
-  Honest:
-    "Be direct and firm. Cut the fluff but stay professional. Call out problems clearly without theatrics. Still warm enough to shake hands with afterward.",
-  Harsh:
-    "No sugarcoating. No softening. State what's wrong and why with surgical precision. The truth, unfiltered.",
-  Brutal:
-    "Go in. Be savage, witty, and specific. Make it sting. Use comparisons that land. This should feel like getting roasted at a dinner party by the funniest person in the room.",
-  "Career-ending":
-    "Maximum creative destruction. Pull no punches. Be the most brutally funny, incisive, and sharp version of yourself. Roast them into the next dimension — but keep it constructive and safe. Leave them simultaneously destroyed and enlightened.",
+  Honest: "Be direct and firm. Cut the fluff but stay professional. Still warm enough to shake hands with afterward.",
+  Harsh: "No sugarcoating. State what's wrong and why with surgical precision. The truth, unfiltered.",
+  Brutal: "Go in. Be savage, witty, and specific. Make it sting. This should feel like getting roasted at a dinner party by the funniest person in the room.",
+  "Career-ending": "Maximum creative destruction. Pull no punches. Roast them into the next dimension — but keep it constructive and safe.",
+};
+
+const PERSONALITY_INSTRUCTIONS: Record<string, string> = {
+  "Savage Mentor":
+    "You are a savage but deeply growth-focused mentor. You tear apart the work, but every critique points toward real improvement. Think brutally honest mentor who genuinely wants them to succeed — they hear the roast AND leave knowing exactly what to do next.",
+  "Startup Investor":
+    "You are a sharp-eyed startup investor evaluating for investment. Focus on: market size, differentiation, competitive moat, business model viability, and whether this solves a real problem worth paying for. Be blunt about why you'd pass or invest. No time for fluff.",
+  "Creative Director":
+    "You are an award-winning creative director with impossibly high standards of taste. Focus on: originality, visual/verbal identity, clarity of message, memorability, and whether it stands out or blends into noise. You hate generic. You love sharp.",
+  "Dating Coach":
+    "You are a no-nonsense dating coach who has seen every cringe profile imaginable. Focus on: attraction signals, specificity vs genericness, confidence, personality coming through, and whether this would actually make someone want to know more. Be real.",
+  "Resume Recruiter":
+    "You are a senior recruiter who has reviewed thousands of resumes with zero patience for filler. Focus on: credibility signals, quantified outcomes, specificity, and whether this reads as a top performer or just another applicant. Cut through the corporate speak.",
+  "Internet Troll, but useful":
+    "You are the internet's most constructive troll — funnier and meaner than the other modes, but you always end with something genuinely useful. Use memes, analogies, and internet-level humor. Roast them into oblivion but leave them with actionable gold.",
+};
+
+const REFINEMENT_INSTRUCTIONS: Record<string, string> = {
+  sharper:
+    "REFINEMENT MODE — SHARPER: Make every critique MORE direct, MORE cutting, and MORE precise. Remove any softness. Be surgical. Each sentence should land harder than before.",
+  funnier:
+    "REFINEMENT MODE — FUNNIER: Make the critique FUNNIER and more meme-worthy. Use more witty analogies, pop culture comparisons, and internet-level observations. Make it the kind of thing someone screenshots and sends to a group chat.",
+  professional:
+    "REFINEMENT MODE — PROFESSIONAL: Less savage, more strategic. Feedback should read like it's from a senior consultant rather than a roaster. Still direct and critical, but more polished and business-useful.",
 };
 
 router.post("/roast", async (req, res) => {
-  const { category, intensity, content } = req.body as {
-    category: string;
-    intensity: string;
-    content: string;
-  };
+  const { category, intensity, content, personality, refinementMode } =
+    req.body as {
+      category: string;
+      intensity: string;
+      content: string;
+      personality: string;
+      refinementMode?: string;
+    };
 
-  if (!category || !intensity || !content) {
-    res.status(400).json({ error: "category, intensity, and content are required" });
+  if (!category || !intensity || !content || !personality) {
+    res.status(400).json({ error: "category, intensity, content, and personality are required" });
     return;
   }
 
@@ -77,8 +84,16 @@ router.post("/roast", async (req, res) => {
   const intensityInstruction =
     INTENSITY_INSTRUCTIONS[intensity] ?? INTENSITY_INSTRUCTIONS["Brutal"];
 
+  const personalityInstruction =
+    PERSONALITY_INSTRUCTIONS[personality] ?? PERSONALITY_INSTRUCTIONS["Savage Mentor"];
+
+  const refinementInstruction = refinementMode
+    ? `\n\n${REFINEMENT_INSTRUCTIONS[refinementMode] ?? ""}`
+    : "";
+
   const userPrompt = `Category: ${category}
 Intensity: ${intensity} — ${intensityInstruction}
+Personality Mode: ${personality} — ${personalityInstruction}${refinementInstruction}
 
 Content to roast:
 ${content}
@@ -86,11 +101,19 @@ ${content}
 Respond with a JSON object with EXACTLY these fields:
 {
   "viralOneLiner": "One devastating, screenshot-worthy sentence under 20 words. Specific to their content. Make it land.",
-  "brutalRoast": "2-4 punchy paragraphs of savage, witty critique. Short sentences. Specific observations. No corporate language. Make every sentence count.",
-  "actualDiagnosis": "The real underlying problem. What's actually broken at a deeper level. Be specific and insightful, not vague.",
+  "brutalRoast": "2-4 punchy paragraphs of savage, witty critique in the specified personality style. Short sentences. No corporate language.",
+  "actualDiagnosis": "The real underlying problem at a deeper level. Specific and insightful.",
   "biggestWeaknesses": ["specific weakness 1", "specific weakness 2", "specific weakness 3"],
   "threeFixes": ["concrete, actionable fix 1", "concrete, actionable fix 2", "concrete, actionable fix 3"],
-  "improvedVersion": "A sharper, better rewritten version of their input. Show them what good actually looks like."
+  "improvedVersion": "A sharper, better rewritten version of their input. Show them what good actually looks like.",
+  "scoreReport": {
+    "overallRoastScore": <0-100, how badly this deserved to be roasted>,
+    "clarity": <0-100, how clear and understandable the input is>,
+    "originality": <0-100, how fresh and unique it feels>,
+    "marketability": <0-100, how appealing or useful it is to others>,
+    "cringeLevel": <0-100, how generic, embarrassing, or weak it sounds>,
+    "fixability": <0-100, how easy it would be to significantly improve>
+  }
 }`;
 
   try {

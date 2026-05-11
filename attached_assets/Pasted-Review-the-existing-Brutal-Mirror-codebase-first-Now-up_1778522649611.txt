@@ -1,0 +1,271 @@
+Review the existing Brutal Mirror codebase first.
+
+Now upgrade the UI/UX to make the app feel like a premium million-dollar AI product without adding heavy backend features.
+
+Do not add authentication.
+Do not add payments.
+Do not add database.
+Do not add image upload.
+Do not add screenshot analysis yet.
+
+Focus only on frontend polish, UX, lightweight feature improvements, and making the app feel premium, addictive, and screenshot-worthy.
+
+==================================================
+1. UPGRADE THE LANDING/HERO SECTION
+==================================================
+
+Improve the top hero section so the app feels premium and memorable.
+
+Use this headline:
+“Your idea is not special. Let’s fix that.”
+
+Use this subheadline:
+“Paste your bio, startup idea, profile, resume, or app concept. Brutal Mirror will roast it, diagnose it, and rebuild it sharper.”
+
+Add:
+- premium dark gradient background
+- subtle purple glow using the brand colors
+- clean logo/icon placement
+- strong CTA button
+- short trust-style microcopy:
+  “No fluff. No fake positivity. Just sharp feedback.”
+
+Keep the app mobile-first.
+
+Brand colors:
+- #6d28d9
+- #8b5cf6
+- #a78bfa
+
+==================================================
+2. ADD EXAMPLE CHIPS ABOVE THE INPUT
+==================================================
+
+Add clickable example chips above or near the textarea.
+
+Example chips:
+- Roast my startup idea
+- Destroy my Instagram bio
+- Fix my dating profile
+- Judge my app idea
+- Rewrite my resume summary
+
+When clicked:
+- Fill the category automatically
+- Fill the textarea with a strong sample input
+- Scroll/focus the textarea if appropriate
+
+Use polished pill-style chips with purple hover/active states.
+
+==================================================
+3. ADD ROAST PERSONALITY MODE
+==================================================
+
+Add a new dropdown called “Roast Personality”.
+
+Options:
+- Savage Mentor
+- Startup Investor
+- Creative Director
+- Dating Coach
+- Resume Recruiter
+- Internet Troll, but useful
+
+Send this value to the backend with the roast request.
+
+Update the backend prompt so the AI adapts its critique style based on selected personality.
+
+Rules:
+- Savage Mentor: brutal but growth-focused
+- Startup Investor: focuses on market, positioning, differentiation, and money
+- Creative Director: focuses on branding, taste, originality, and clarity
+- Dating Coach: focuses on attraction, specificity, confidence, and personality
+- Resume Recruiter: focuses on credibility, specificity, outcomes, and hiring value
+- Internet Troll, but useful: funnier and meaner, but still constructive and safe
+
+Keep all existing safety rules.
+
+==================================================
+4. ADD ROAST REPORT SCORES
+==================================================
+
+Update the AI JSON response to include a new object:
+
+"scoreReport": {
+  "overallRoastScore": number,
+  "clarity": number,
+  "originality": number,
+  "marketability": number,
+  "cringeLevel": number,
+  "fixability": number
+}
+
+Each number should be from 0 to 100.
+
+Meaning:
+- overallRoastScore: how badly the input deserved to be roasted
+- clarity: how clear the input is
+- originality: how fresh or unique it feels
+- marketability: how appealing or useful it is to others
+- cringeLevel: how generic, embarrassing, or weak it sounds
+- fixability: how easy it is to improve
+
+Display these scores in a premium “Roast Report” card near the top of results.
+
+Use animated horizontal bars or clean score pills.
+
+Make sure:
+- Scores render nicely on mobile
+- Missing scores do not break older saved history items
+- Bars do not overflow
+
+==================================================
+5. ADD BEFORE VS AFTER SECTION
+==================================================
+
+Add a polished “Before vs After” section.
+
+Before:
+- Show the original user input/prompt
+
+After:
+- Show the improved version from the AI
+
+Layout:
+- Desktop: side-by-side cards
+- Mobile: stacked cards
+
+This section should appear after the diagnosis/fixes or inside the result tabs.
+
+Make it easy to compare the weak original against the improved version.
+
+==================================================
+6. ADD RESULT TABS
+==================================================
+
+Improve the result display by adding tabs:
+
+- Report
+- Roast
+- Fixes
+- Rewrite
+- Share
+
+Tab content:
+Report:
+- Viral one-liner
+- Roast Report scores
+
+Roast:
+- Brutal Roast
+- Actual Diagnosis
+
+Fixes:
+- Biggest Weaknesses
+- 3 Fixes
+
+Rewrite:
+- Before vs After
+- Improved Version
+
+Share:
+- Share card
+- Copy result
+- Copy quote
+- Download PNG if already implemented
+
+Make tabs:
+- Mobile-friendly
+- Sticky or easy to access if appropriate
+- Smooth transitions
+- No horizontal overflow
+
+If tabs are too risky, use segmented buttons with scrollable horizontal layout.
+
+==================================================
+7. ADD PREMIUM MICRO-INTERACTIONS
+==================================================
+
+Add small polish details:
+
+- Smooth card entrance animation after result loads
+- Button hover glow
+- Selected category/intensity/personality glow
+- Copy confirmation toast
+- Better loading skeleton or animated loading state
+- Smooth scroll to result
+- Disabled button states
+- Subtle gradient borders on key cards
+
+Do not make it flashy.
+Make it feel expensive.
+
+==================================================
+8. IMPROVE HISTORY UX
+==================================================
+
+Improve the history section.
+
+Each saved roast should show:
+- Category
+- Intensity
+- Personality mode
+- Date/time
+- Original prompt preview
+- Viral one-liner preview if available
+
+Add empty state:
+“No emotional damage archived yet.”
+Subtext:
+“Your saved roasts will appear here after you generate one.”
+
+Add CTA:
+“Generate your first roast”
+
+Ensure old saved items without personality or scoreReport still render safely.
+
+==================================================
+9. ADD LIGHTWEIGHT REGENERATION ACTIONS
+==================================================
+
+After a result is generated, add action buttons:
+- Make it sharper
+- Make it funnier
+- Make it more professional
+
+When clicked:
+- Call the roast endpoint again using the same original input
+- Include an extra instruction field such as refinementMode:
+  - sharper
+  - funnier
+  - professional
+
+Update backend to accept optional refinementMode.
+
+Behavior:
+- sharper: more direct and cutting
+- funnier: more witty and meme-worthy
+- professional: less savage, more business-useful
+
+Do not create a separate endpoint unless necessary.
+
+==================================================
+10. QUALITY CHECK
+==================================================
+
+After implementation, test:
+
+- App loads on mobile size
+- Example chips fill the form
+- Roast Personality is sent to backend
+- AI returns valid JSON with scoreReport
+- Results render in tabs
+- Old history items still work
+- New history items include personality and score report
+- Copy buttons still work
+- New Roast still clears input
+- No horizontal scrolling
+- No console errors
+- Loading state looks polished
+
+The final result should feel like a premium AI roast/report product, not a basic form connected to an API.

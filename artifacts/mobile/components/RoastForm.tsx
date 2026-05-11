@@ -21,10 +21,12 @@ import {
 
 import { useRoast } from "@/context/RoastContext";
 import { useColors } from "@/hooks/useColors";
+import { ExampleChips } from "./ExampleChips";
 import { LoadingMessages } from "./LoadingMessages";
 
 export interface RoastFormHandle {
   reset: () => void;
+  fill: (category: string, content: string) => void;
 }
 
 const CATEGORIES = [
@@ -34,36 +36,25 @@ const CATEGORIES = [
   "Resume Summary",
   "Business Name",
   "YouTube Channel Idea",
-  "Personal Goal",
   "Mobile App Idea",
+  "Personal Goal",
   "Other",
 ];
 
 const INTENSITIES = [
-  {
-    label: "Honest",
-    desc: "Direct but professional",
-    color: "#6b7280",
-    emoji: "🙂",
-  },
-  {
-    label: "Harsh",
-    desc: "Sharp and unfiltered",
-    color: "#f59e0b",
-    emoji: "😬",
-  },
-  {
-    label: "Brutal",
-    desc: "Savage, witty, uncomfortable",
-    color: "#ef4444",
-    emoji: "💀",
-  },
-  {
-    label: "Career-ending",
-    desc: "Maximum destruction",
-    color: "#8b5cf6",
-    emoji: "☠️",
-  },
+  { label: "Honest", desc: "Direct but professional", color: "#6b7280", emoji: "🙂" },
+  { label: "Harsh", desc: "Sharp and unfiltered", color: "#f59e0b", emoji: "😬" },
+  { label: "Brutal", desc: "Savage, witty, uncomfortable", color: "#ef4444", emoji: "💀" },
+  { label: "Career-ending", desc: "Maximum destruction", color: "#8b5cf6", emoji: "☠️" },
+];
+
+const PERSONALITIES = [
+  { label: "Savage Mentor", desc: "Brutal but growth-focused", icon: "🧠", color: "#8b5cf6" },
+  { label: "Startup Investor", desc: "Market, positioning, differentiation", icon: "💰", color: "#f59e0b" },
+  { label: "Creative Director", desc: "Branding, taste, originality", icon: "🎨", color: "#ec4899" },
+  { label: "Dating Coach", desc: "Attraction, confidence, personality", icon: "💘", color: "#ef4444" },
+  { label: "Resume Recruiter", desc: "Credibility, outcomes, hiring value", icon: "📋", color: "#22c55e" },
+  { label: "Internet Troll, but useful", desc: "Funnier, meaner, still constructive", icon: "💀", color: "#6b7280" },
 ];
 
 const MAX_LENGTH = 3000;
@@ -89,16 +80,11 @@ function PickerModal({
     <Modal visible={visible} transparent animationType="slide" statusBarTranslucent>
       <Pressable style={styles.modalOverlay} onPress={onClose}>
         <Pressable
-          style={[
-            styles.modalSheet,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
+          style={[styles.modalSheet, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => {}}
         >
           <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
-          <Text style={[styles.modalTitle, { color: colors.foreground }]}>
-            {title}
-          </Text>
+          <Text style={[styles.modalTitle, { color: colors.foreground }]}>{title}</Text>
           {options.map((opt) => {
             const isSelected = selected === opt;
             return (
@@ -107,29 +93,17 @@ function PickerModal({
                 style={[
                   styles.modalOption,
                   {
-                    backgroundColor: isSelected
-                      ? colors.primary + "18"
-                      : "transparent",
+                    backgroundColor: isSelected ? colors.primary + "18" : "transparent",
                     borderColor: isSelected ? colors.primary : colors.border,
                   },
                 ]}
-                onPress={() => {
-                  onSelect(opt);
-                  onClose();
-                }}
+                onPress={() => { onSelect(opt); onClose(); }}
                 activeOpacity={0.7}
               >
-                <Text
-                  style={[
-                    styles.modalOptionText,
-                    { color: isSelected ? colors.primary : colors.foreground },
-                  ]}
-                >
+                <Text style={[styles.modalOptionText, { color: isSelected ? colors.primary : colors.foreground }]}>
                   {opt}
                 </Text>
-                {isSelected && (
-                  <Feather name="check" size={16} color={colors.primary} />
-                )}
+                {isSelected && <Feather name="check" size={16} color={colors.primary} />}
               </TouchableOpacity>
             );
           })}
@@ -155,16 +129,11 @@ function IntensityPickerModal({
     <Modal visible={visible} transparent animationType="slide" statusBarTranslucent>
       <Pressable style={styles.modalOverlay} onPress={onClose}>
         <Pressable
-          style={[
-            styles.modalSheet,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
+          style={[styles.modalSheet, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => {}}
         >
           <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
-          <Text style={[styles.modalTitle, { color: colors.foreground }]}>
-            Intensity Level
-          </Text>
+          <Text style={[styles.modalTitle, { color: colors.foreground }]}>Intensity Level</Text>
           {INTENSITIES.map((item) => {
             const isSelected = selected === item.label;
             return (
@@ -173,40 +142,78 @@ function IntensityPickerModal({
                 style={[
                   styles.intensityOption,
                   {
-                    backgroundColor: isSelected
-                      ? item.color + "18"
-                      : colors.secondary,
+                    backgroundColor: isSelected ? item.color + "18" : colors.secondary,
                     borderColor: isSelected ? item.color : colors.border,
                   },
                 ]}
-                onPress={() => {
-                  onSelect(item.label);
-                  onClose();
-                }}
+                onPress={() => { onSelect(item.label); onClose(); }}
                 activeOpacity={0.7}
               >
-                <Text style={styles.intensityEmoji}>{item.emoji}</Text>
+                <Text style={styles.optionEmoji}>{item.emoji}</Text>
                 <View style={{ flex: 1 }}>
-                  <Text
-                    style={[
-                      styles.intensityLabel,
-                      { color: isSelected ? item.color : colors.foreground },
-                    ]}
-                  >
+                  <Text style={[styles.optionLabel, { color: isSelected ? item.color : colors.foreground }]}>
                     {item.label}
                   </Text>
-                  <Text
-                    style={[
-                      styles.intensityDesc,
-                      { color: colors.mutedForeground },
-                    ]}
-                  >
+                  <Text style={[styles.optionDesc, { color: colors.mutedForeground }]}>
                     {item.desc}
                   </Text>
                 </View>
-                {isSelected && (
-                  <Feather name="check" size={16} color={item.color} />
-                )}
+                {isSelected && <Feather name="check" size={16} color={item.color} />}
+              </TouchableOpacity>
+            );
+          })}
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+function PersonalityPickerModal({
+  visible,
+  selected,
+  onSelect,
+  onClose,
+}: {
+  visible: boolean;
+  selected: string;
+  onSelect: (val: string) => void;
+  onClose: () => void;
+}) {
+  const colors = useColors();
+  return (
+    <Modal visible={visible} transparent animationType="slide" statusBarTranslucent>
+      <Pressable style={styles.modalOverlay} onPress={onClose}>
+        <Pressable
+          style={[styles.modalSheet, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => {}}
+        >
+          <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
+          <Text style={[styles.modalTitle, { color: colors.foreground }]}>Roast Personality</Text>
+          {PERSONALITIES.map((item) => {
+            const isSelected = selected === item.label;
+            return (
+              <TouchableOpacity
+                key={item.label}
+                style={[
+                  styles.intensityOption,
+                  {
+                    backgroundColor: isSelected ? item.color + "18" : colors.secondary,
+                    borderColor: isSelected ? item.color : colors.border,
+                  },
+                ]}
+                onPress={() => { onSelect(item.label); onClose(); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.optionEmoji}>{item.icon}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.optionLabel, { color: isSelected ? item.color : colors.foreground }]}>
+                    {item.label}
+                  </Text>
+                  <Text style={[styles.optionDesc, { color: colors.mutedForeground }]}>
+                    {item.desc}
+                  </Text>
+                </View>
+                {isSelected && <Feather name="check" size={16} color={item.color} />}
               </TouchableOpacity>
             );
           })}
@@ -227,11 +234,13 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
 
     const [category, setCategory] = useState(CATEGORIES[0]);
     const [intensity, setIntensity] = useState("Brutal");
+    const [personality, setPersonality] = useState("Savage Mentor");
     const [content, setContent] = useState("");
     const [validationError, setValidationError] = useState<string | null>(null);
     const [isFocused, setIsFocused] = useState(false);
     const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [showIntensityModal, setShowIntensityModal] = useState(false);
+    const [showPersonalityModal, setShowPersonalityModal] = useState(false);
 
     const buttonScale = useRef(new Animated.Value(1)).current;
 
@@ -240,26 +249,23 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
         setContent("");
         setValidationError(null);
       },
+      fill: (cat: string, cnt: string) => {
+        setCategory(cat);
+        setContent(cnt);
+        setValidationError(null);
+      },
     }));
 
     const charCount = content.length;
     const isOverLimit = charCount > MAX_LENGTH;
     const isTooShort = charCount < MIN_LENGTH && charCount > 0;
     const currentIntensity = INTENSITIES.find((i) => i.label === intensity);
+    const currentPersonality = PERSONALITIES.find((p) => p.label === personality);
 
     const pressIn = () =>
-      Animated.spring(buttonScale, {
-        toValue: 0.97,
-        useNativeDriver: true,
-        speed: 40,
-      }).start();
-
+      Animated.spring(buttonScale, { toValue: 0.97, useNativeDriver: true, speed: 40 }).start();
     const pressOut = () =>
-      Animated.spring(buttonScale, {
-        toValue: 1,
-        useNativeDriver: true,
-        speed: 40,
-      }).start();
+      Animated.spring(buttonScale, { toValue: 1, useNativeDriver: true, speed: 40 }).start();
 
     const handleSubmit = async () => {
       if (charCount < MIN_LENGTH) {
@@ -272,7 +278,7 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
       }
       setValidationError(null);
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      await generateRoast(category, intensity, content);
+      await generateRoast(category, intensity, content, personality);
       onResultReady?.();
     };
 
@@ -299,74 +305,88 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
           onSelect={setIntensity}
           onClose={() => setShowIntensityModal(false)}
         />
+        <PersonalityPickerModal
+          visible={showPersonalityModal}
+          selected={personality}
+          onSelect={setPersonality}
+          onClose={() => setShowPersonalityModal(false)}
+        />
 
+        {/* Row 1: Category + Intensity */}
         <View style={styles.row}>
           <TouchableOpacity
-            style={[
-              styles.selectorButton,
-              { backgroundColor: colors.card, borderColor: colors.border },
-            ]}
+            style={[styles.selectorButton, { backgroundColor: colors.card, borderColor: colors.border }]}
             onPress={() => setShowCategoryModal(true)}
             activeOpacity={0.7}
           >
-            <Text
-              style={[styles.selectorLabel, { color: colors.mutedForeground }]}
-            >
-              Category
-            </Text>
+            <Text style={[styles.selectorLabel, { color: colors.mutedForeground }]}>Category</Text>
             <View style={styles.selectorValueRow}>
-              <Text
-                style={[styles.selectorValue, { color: colors.foreground }]}
-                numberOfLines={1}
-              >
+              <Text style={[styles.selectorValue, { color: colors.foreground }]} numberOfLines={1}>
                 {category}
               </Text>
-              <Feather
-                name="chevron-down"
-                size={13}
-                color={colors.mutedForeground}
-              />
+              <Feather name="chevron-down" size={13} color={colors.mutedForeground} />
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[
-              styles.selectorButton,
-              { backgroundColor: colors.card, borderColor: colors.border },
-            ]}
+            style={[styles.selectorButton, { backgroundColor: colors.card, borderColor: colors.border }]}
             onPress={() => setShowIntensityModal(true)}
             activeOpacity={0.7}
           >
-            <Text
-              style={[styles.selectorLabel, { color: colors.mutedForeground }]}
-            >
-              Intensity
-            </Text>
+            <Text style={[styles.selectorLabel, { color: colors.mutedForeground }]}>Intensity</Text>
             <View style={styles.selectorValueRow}>
-              <Text
-                style={[
-                  styles.selectorValue,
-                  { color: currentIntensity?.color ?? colors.primary },
-                ]}
-              >
+              <Text style={[styles.selectorValue, { color: currentIntensity?.color ?? colors.primary }]}>
                 {intensity}
               </Text>
-              <Feather
-                name="chevron-down"
-                size={13}
-                color={colors.mutedForeground}
-              />
+              <Feather name="chevron-down" size={13} color={colors.mutedForeground} />
             </View>
           </TouchableOpacity>
         </View>
 
+        {/* Row 2: Personality (full width) */}
+        <TouchableOpacity
+          style={[
+            styles.personalityButton,
+            {
+              backgroundColor: colors.card,
+              borderColor: currentPersonality ? currentPersonality.color + "40" : colors.border,
+            },
+          ]}
+          onPress={() => setShowPersonalityModal(true)}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.selectorLabel, { color: colors.mutedForeground }]}>
+            Roast Personality
+          </Text>
+          <View style={styles.selectorValueRow}>
+            <Text style={styles.personalityEmoji}>{currentPersonality?.icon}</Text>
+            <Text
+              style={[
+                styles.selectorValue,
+                { color: currentPersonality?.color ?? colors.primary, flex: 1 },
+              ]}
+              numberOfLines={1}
+            >
+              {personality}
+            </Text>
+            <Feather name="chevron-down" size={13} color={colors.mutedForeground} />
+          </View>
+        </TouchableOpacity>
+
+        {/* Example chips */}
+        <ExampleChips
+          onSelect={(cat, cnt) => {
+            setCategory(cat);
+            setContent(cnt);
+            setValidationError(null);
+          }}
+        />
+
+        {/* Textarea */}
         <View
           style={[
             styles.textAreaContainer,
-            {
-              backgroundColor: colors.card,
-              borderColor: textAreaBorderColor,
-            },
+            { backgroundColor: colors.card, borderColor: textAreaBorderColor },
           ]}
         >
           <TextInput
@@ -376,10 +396,7 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
             multiline
             textAlignVertical="top"
             value={content}
-            onChangeText={(t) => {
-              setContent(t);
-              setValidationError(null);
-            }}
+            onChangeText={(t) => { setContent(t); setValidationError(null); }}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             maxLength={MAX_LENGTH + 10}
@@ -407,10 +424,7 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
           <View
             style={[
               styles.errorBox,
-              {
-                backgroundColor: colors.destructive + "12",
-                borderColor: colors.destructive + "30",
-              },
+              { backgroundColor: colors.destructive + "12", borderColor: colors.destructive + "30" },
             ]}
           >
             <Feather name="alert-circle" size={14} color={colors.destructive} />
@@ -429,11 +443,7 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
             activeOpacity={1}
           >
             <LinearGradient
-              colors={
-                isLoading
-                  ? ["#3b1a6e", "#4c1d95"]
-                  : ["#6d28d9", "#8b5cf6", "#a78bfa"]
-              }
+              colors={isLoading ? ["#3b1a6e", "#4c1d95"] : ["#6d28d9", "#8b5cf6", "#a78bfa"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={[styles.submitButton, { opacity: isLoading ? 0.85 : 1 }]}
@@ -455,42 +465,20 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
 );
 
 const styles = StyleSheet.create({
-  container: {
-    gap: 12,
-  },
-  row: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  selectorButton: {
-    flex: 1,
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 14,
-    gap: 5,
-  },
+  container: { gap: 12 },
+  row: { flexDirection: "row", gap: 10 },
+  selectorButton: { flex: 1, borderRadius: 12, borderWidth: 1, padding: 14, gap: 5 },
+  personalityButton: { borderRadius: 12, borderWidth: 1, padding: 14, gap: 5 },
   selectorLabel: {
     fontSize: 10,
     fontFamily: "Inter_600SemiBold",
     textTransform: "uppercase",
     letterSpacing: 0.8,
   },
-  selectorValueRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 4,
-  },
-  selectorValue: {
-    fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
-    flex: 1,
-  },
-  textAreaContainer: {
-    borderRadius: 14,
-    borderWidth: 1.5,
-    overflow: "hidden",
-  },
+  selectorValueRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  selectorValue: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  personalityEmoji: { fontSize: 16 },
+  textAreaContainer: { borderRadius: 14, borderWidth: 1.5, overflow: "hidden" },
   textArea: {
     fontSize: 15,
     fontFamily: "Inter_400Regular",
@@ -499,16 +487,8 @@ const styles = StyleSheet.create({
     minHeight: 150,
     maxHeight: 240,
   },
-  charCountRow: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    alignItems: "flex-end",
-  },
-  charCount: {
-    fontSize: 11,
-    fontFamily: "Inter_500Medium",
-    letterSpacing: 0.2,
-  },
+  charCountRow: { paddingHorizontal: 16, paddingBottom: 12, alignItems: "flex-end" },
+  charCount: { fontSize: 11, fontFamily: "Inter_500Medium", letterSpacing: 0.2 },
   errorBox: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -518,12 +498,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
   },
-  errorText: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    flex: 1,
-    lineHeight: 19,
-  },
+  errorText: { fontSize: 13, fontFamily: "Inter_400Regular", flex: 1, lineHeight: 19 },
   submitButton: {
     borderRadius: 16,
     paddingVertical: 20,
@@ -532,22 +507,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     minHeight: 64,
   },
-  btnContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  submitText: {
-    color: "#fff",
-    fontSize: 16,
-    fontFamily: "Inter_700Bold",
-    letterSpacing: 0.2,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    justifyContent: "flex-end",
-  },
+  btnContent: { flexDirection: "row", alignItems: "center", gap: 10 },
+  submitText: { color: "#fff", fontSize: 16, fontFamily: "Inter_700Bold", letterSpacing: 0.2 },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "flex-end" },
   modalSheet: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
@@ -557,18 +519,8 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === "ios" ? 44 : 28,
     gap: 8,
   },
-  modalHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    alignSelf: "center",
-    marginBottom: 12,
-  },
-  modalTitle: {
-    fontSize: 17,
-    fontFamily: "Inter_700Bold",
-    marginBottom: 8,
-  },
+  modalHandle: { width: 36, height: 4, borderRadius: 2, alignSelf: "center", marginBottom: 12 },
+  modalTitle: { fontSize: 17, fontFamily: "Inter_700Bold", marginBottom: 8 },
   modalOption: {
     flexDirection: "row",
     alignItems: "center",
@@ -578,10 +530,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
   },
-  modalOptionText: {
-    fontSize: 15,
-    fontFamily: "Inter_500Medium",
-  },
+  modalOptionText: { fontSize: 15, fontFamily: "Inter_500Medium" },
   intensityOption: {
     flexDirection: "row",
     alignItems: "center",
@@ -591,19 +540,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 12,
   },
-  intensityEmoji: {
-    fontSize: 22,
-    width: 28,
-    textAlign: "center",
-  },
-  intensityLabel: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
-    marginBottom: 2,
-  },
-  intensityDesc: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    lineHeight: 16,
-  },
+  optionEmoji: { fontSize: 20, width: 28, textAlign: "center" },
+  optionLabel: { fontSize: 15, fontFamily: "Inter_600SemiBold", marginBottom: 2 },
+  optionDesc: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 16 },
 });

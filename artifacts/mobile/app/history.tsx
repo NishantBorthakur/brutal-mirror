@@ -26,9 +26,7 @@ export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { history, clearHistory } = useRoast();
-  const [selectedItem, setSelectedItem] = useState<RoastHistoryItem | null>(
-    null
-  );
+  const [selectedItem, setSelectedItem] = useState<RoastHistoryItem | null>(null);
 
   const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -43,9 +41,7 @@ export default function HistoryScreen() {
           text: "Delete All",
           style: "destructive",
           onPress: async () => {
-            await Haptics.notificationAsync(
-              Haptics.NotificationFeedbackType.Warning
-            );
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
             await clearHistory();
             setSelectedItem(null);
           },
@@ -69,33 +65,26 @@ export default function HistoryScreen() {
           ]}
         >
           <TouchableOpacity
-            style={[
-              styles.backBtn,
-              { borderColor: colors.border, backgroundColor: colors.card },
-            ]}
+            style={[styles.backBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
             onPress={() => setSelectedItem(null)}
             activeOpacity={0.7}
           >
             <Feather name="arrow-left" size={17} color={colors.foreground} />
           </TouchableOpacity>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={[styles.title, { color: colors.foreground }]}>
-              Past Roast
-            </Text>
+            <Text style={[styles.title, { color: colors.foreground }]}>Past Roast</Text>
             <Text
               style={[styles.subtitle, { color: colors.mutedForeground }]}
               numberOfLines={1}
             >
               {selectedItem.category} · {selectedItem.intensity}
+              {selectedItem.personality ? ` · ${selectedItem.personality}` : ""}
             </Text>
           </View>
         </View>
 
         <ScrollView
-          contentContainerStyle={[
-            styles.scrollPad,
-            { paddingBottom: bottomPad + 24 },
-          ]}
+          contentContainerStyle={[styles.scrollPad, { paddingBottom: bottomPad + 24 }]}
           showsVerticalScrollIndicator={false}
         >
           <RoastResultView
@@ -103,9 +92,8 @@ export default function HistoryScreen() {
             meta={{
               category: selectedItem.category,
               intensity: selectedItem.intensity,
-              // show full original prompt if stored; fall back to preview for old items
-              originalPrompt:
-                selectedItem.originalPrompt ?? selectedItem.contentPreview,
+              personality: selectedItem.personality,
+              originalPrompt: selectedItem.originalPrompt ?? selectedItem.contentPreview,
             }}
           />
         </ScrollView>
@@ -127,19 +115,14 @@ export default function HistoryScreen() {
         ]}
       >
         <TouchableOpacity
-          style={[
-            styles.backBtn,
-            { borderColor: colors.border, backgroundColor: colors.card },
-          ]}
+          style={[styles.backBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
           <Feather name="arrow-left" size={17} color={colors.foreground} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.title, { color: colors.foreground }]}>
-            History
-          </Text>
+          <Text style={[styles.title, { color: colors.foreground }]}>History</Text>
           {history.length > 0 && (
             <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
               {history.length} roast{history.length !== 1 ? "s" : ""} saved
@@ -165,10 +148,7 @@ export default function HistoryScreen() {
 
       {history.length === 0 ? (
         <View style={styles.emptyState}>
-          <LinearGradient
-            colors={["#8b5cf620", "#8b5cf608"]}
-            style={styles.emptyIconBg}
-          >
+          <LinearGradient colors={["#8b5cf620", "#8b5cf608"]} style={styles.emptyIconBg}>
             <Image
               source={require("@/assets/images/icon.png")}
               style={styles.emptyIcon}
@@ -176,17 +156,12 @@ export default function HistoryScreen() {
             />
           </LinearGradient>
           <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
-            Nothing here yet
+            No emotional damage archived yet.
           </Text>
           <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-            Your roasting history will appear here. Every roast is saved for up
-            to 20 sessions.
+            Your saved roasts will appear here after you generate one.
           </Text>
-          <TouchableOpacity
-            style={styles.startBtn}
-            onPress={() => router.back()}
-            activeOpacity={0.85}
-          >
+          <TouchableOpacity style={styles.startBtn} onPress={() => router.back()} activeOpacity={0.85}>
             <LinearGradient
               colors={["#6d28d9", "#8b5cf6"]}
               start={{ x: 0, y: 0 }}
@@ -194,7 +169,7 @@ export default function HistoryScreen() {
               style={styles.startBtnGradient}
             >
               <Feather name="zap" size={15} color="#fff" />
-              <Text style={styles.startBtnText}>Start Roasting</Text>
+              <Text style={styles.startBtnText}>Generate your first roast</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -202,10 +177,7 @@ export default function HistoryScreen() {
         <FlatList
           data={history}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={[
-            styles.list,
-            { paddingBottom: bottomPad + 24 },
-          ]}
+          contentContainerStyle={[styles.list, { paddingBottom: bottomPad + 24 }]}
           ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
           renderItem={({ item }) => (
             <HistoryCard item={item} onPress={() => setSelectedItem(item)} />
@@ -218,9 +190,7 @@ export default function HistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
+  root: { flex: 1 },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -238,16 +208,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexShrink: 0,
   },
-  title: {
-    fontSize: 20,
-    fontFamily: "Inter_700Bold",
-    letterSpacing: -0.3,
-  },
-  subtitle: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    marginTop: 2,
-  },
+  title: { fontSize: 20, fontFamily: "Inter_700Bold", letterSpacing: -0.3 },
+  subtitle: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
   clearBtn: {
     width: 40,
     height: 40,
@@ -257,12 +219,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexShrink: 0,
   },
-  scrollPad: {
-    padding: 20,
-  },
-  list: {
-    padding: 20,
-  },
+  scrollPad: { padding: 20 },
+  list: { padding: 20 },
   emptyState: {
     flex: 1,
     alignItems: "center",
@@ -278,14 +236,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 4,
   },
-  emptyIcon: {
-    width: 48,
-    height: 48,
-  },
+  emptyIcon: { width: 48, height: 48 },
   emptyTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontFamily: "Inter_700Bold",
     textAlign: "center",
+    lineHeight: 28,
   },
   emptyText: {
     fontSize: 14,
@@ -293,11 +249,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 22,
   },
-  startBtn: {
-    borderRadius: 14,
-    overflow: "hidden",
-    marginTop: 4,
-  },
+  startBtn: { borderRadius: 14, overflow: "hidden", marginTop: 4 },
   startBtnGradient: {
     flexDirection: "row",
     alignItems: "center",
@@ -305,9 +257,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 14,
   },
-  startBtnText: {
-    color: "#fff",
-    fontSize: 15,
-    fontFamily: "Inter_700Bold",
-  },
+  startBtnText: { color: "#fff", fontSize: 15, fontFamily: "Inter_700Bold" },
 });

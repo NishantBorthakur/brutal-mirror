@@ -8,35 +8,55 @@ import React, {
   useState,
 } from "react";
 
+export interface ScoreReport {
+  overallRoastScore: number;
+  clarity: number;
+  originality: number;
+  marketability: number;
+  cringeLevel: number;
+  fixability: number;
+}
+
 export interface RoastResult {
-  viralOneLiner?: string; // optional — older history items may not have it
+  viralOneLiner?: string;
   brutalRoast: string;
   actualDiagnosis: string;
   biggestWeaknesses: string[];
   threeFixes: string[];
   improvedVersion: string;
+  scoreReport?: ScoreReport;
 }
 
 export interface RoastHistoryItem {
   id: string;
   category: string;
   intensity: string;
+  personality?: string;
   contentPreview: string;
   originalPrompt?: string;
   result: RoastResult;
   createdAt: string;
 }
 
+interface RoastMeta {
+  category: string;
+  intensity: string;
+  content: string;
+  personality: string;
+}
+
 interface RoastContextValue {
   history: RoastHistoryItem[];
   currentResult: RoastResult | null;
-  currentMeta: { category: string; intensity: string; content: string } | null;
+  currentMeta: RoastMeta | null;
   isLoading: boolean;
   error: string | null;
   generateRoast: (
     category: string,
     intensity: string,
-    content: string
+    content: string,
+    personality: string,
+    refinementMode?: string
   ) => Promise<void>;
   clearHistory: () => Promise<void>;
   clearResult: () => void;
@@ -50,11 +70,7 @@ const MAX_HISTORY = 20;
 export function RoastProvider({ children }: { children: React.ReactNode }) {
   const [history, setHistory] = useState<RoastHistoryItem[]>([]);
   const [currentResult, setCurrentResult] = useState<RoastResult | null>(null);
-  const [currentMeta, setCurrentMeta] = useState<{
-    category: string;
-    intensity: string;
-    content: string;
-  } | null>(null);
+  const [currentMeta, setCurrentMeta] = useState<RoastMeta | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,7 +95,13 @@ export function RoastProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const generateRoast = useCallback(
-    async (category: string, intensity: string, content: string) => {
+    async (
+      category: string,
+      intensity: string,
+      content: string,
+      personality: string,
+      refinementMode?: string
+    ) => {
       setIsLoading(true);
       setError(null);
       setCurrentResult(null);
@@ -91,7 +113,7 @@ export function RoastProvider({ children }: { children: React.ReactNode }) {
         const response = await fetch(`${baseUrl}/api/roast`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ category, intensity, content }),
+          body: JSON.stringify({ category, intensity, content, personality, refinementMode }),
         });
 
         const data = (await response.json()) as RoastResult | { error: string };
@@ -108,12 +130,13 @@ export function RoastProvider({ children }: { children: React.ReactNode }) {
         }
 
         setCurrentResult(result);
-        setCurrentMeta({ category, intensity, content });
+        setCurrentMeta({ category, intensity, content, personality });
 
         const newItem: RoastHistoryItem = {
           id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
           category,
           intensity,
+          personality,
           contentPreview: content.slice(0, 80) + (content.length > 80 ? "…" : ""),
           originalPrompt: content,
           result,
