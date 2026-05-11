@@ -12,6 +12,7 @@ import {
 
 import { type RoastResult } from "@/context/RoastContext";
 import { useColors } from "@/hooks/useColors";
+import { ViralCard } from "./ViralCard";
 
 interface ResultCardProps {
   icon: string;
@@ -30,13 +31,13 @@ function ResultCard({
 }: ResultCardProps) {
   const colors = useColors();
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(16)).current;
+  const slideAnim = useRef(new Animated.Value(18)).current;
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 380,
+        duration: 420,
         delay,
         useNativeDriver: true,
       }),
@@ -147,9 +148,15 @@ export function RoastResultView({ result, meta, onNewRoast }: Props) {
   }, []);
 
   const handleCopy = async () => {
-    const lines: string[] = [
+    const lines: string[] = [];
+    if (result.viralOneLiner) {
+      lines.push(`⚡ "${result.viralOneLiner}"`);
+      lines.push(`— Brutal Mirror`);
+      lines.push(``);
+    }
+    lines.push(
       `🔥 BRUTAL MIRROR`,
-      meta ? `Category: ${meta.category} | Intensity: ${meta.intensity}` : "",
+      meta ? `${meta.category} · ${meta.intensity}` : "",
       ``,
       `💀 THE ROAST`,
       result.brutalRoast,
@@ -164,8 +171,8 @@ export function RoastResultView({ result, meta, onNewRoast }: Props) {
       ...result.threeFixes.map((f, i) => `${i + 1}. ${f}`),
       ``,
       `✨ IMPROVED VERSION`,
-      result.improvedVersion,
-    ];
+      result.improvedVersion
+    );
 
     await Clipboard.setStringAsync(lines.join("\n").trim());
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -179,7 +186,7 @@ export function RoastResultView({ result, meta, onNewRoast }: Props) {
 
   return (
     <View style={styles.container}>
-      {/* ── Header: label + badges on left, copy button on right ── */}
+      {/* ── Header row: badges left, copy right ── */}
       <Animated.View style={{ opacity: headerFade }}>
         <View style={styles.headerRow}>
           <View style={styles.headerLeft}>
@@ -212,7 +219,6 @@ export function RoastResultView({ result, meta, onNewRoast }: Props) {
             )}
           </View>
 
-          {/* Only Copy button in top-right */}
           <TouchableOpacity
             style={[
               styles.copyBtn,
@@ -235,51 +241,54 @@ export function RoastResultView({ result, meta, onNewRoast }: Props) {
                 { color: copied ? "#22c55e" : colors.mutedForeground },
               ]}
             >
-              {copied ? "Copied!" : "Copy"}
+              {copied ? "Copied!" : "Copy All"}
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* New Roast button — its own row below the header */}
         <NewRoastButton onPress={onNewRoast} variant="outline" />
       </Animated.View>
 
-      {/* ── Original Prompt card (if available) ── */}
-      {meta?.originalPrompt && (
-        <ResultCard
-          icon="file-text"
-          accentColor="#6b7280"
-          title="ORIGINAL PROMPT"
-          delay={0}
-        >
-          <Text style={[styles.promptText, { color: colors.mutedForeground }]}>
-            {meta.originalPrompt}
-          </Text>
-        </ResultCard>
+      {/* ── 1. VIRAL ONE-LINER (share card) ── */}
+      {result.viralOneLiner && (
+        <ViralCard
+          quote={result.viralOneLiner}
+          category={meta?.category}
+          intensity={meta?.intensity}
+          delay={80}
+        />
       )}
 
-      <ResultCard icon="zap" accentColor="#ef4444" title="THE ROAST" delay={60}>
+      {/* ── 2. BRUTAL ROAST ── */}
+      <ResultCard
+        icon="zap"
+        accentColor="#ef4444"
+        title="THE ROAST"
+        delay={result.viralOneLiner ? 160 : 60}
+      >
         <Text style={[styles.roastText, { color: colors.foreground }]}>
           {result.brutalRoast}
         </Text>
       </ResultCard>
 
+      {/* ── 3. ACTUAL DIAGNOSIS ── */}
       <ResultCard
         icon="activity"
         accentColor="#f59e0b"
         title="ACTUAL DIAGNOSIS"
-        delay={120}
+        delay={result.viralOneLiner ? 220 : 120}
       >
         <Text style={[styles.bodyText, { color: colors.foreground }]}>
           {result.actualDiagnosis}
         </Text>
       </ResultCard>
 
+      {/* ── 4. BIGGEST WEAKNESSES ── */}
       <ResultCard
         icon="alert-triangle"
         accentColor="#ef4444"
         title="BIGGEST WEAKNESSES"
-        delay={180}
+        delay={result.viralOneLiner ? 280 : 180}
       >
         {result.biggestWeaknesses.map((w, i) => (
           <View key={i} style={styles.listItem}>
@@ -293,11 +302,12 @@ export function RoastResultView({ result, meta, onNewRoast }: Props) {
         ))}
       </ResultCard>
 
+      {/* ── 5. 3 FIXES ── */}
       <ResultCard
         icon="tool"
         accentColor="#22c55e"
         title="3 FIXES"
-        delay={240}
+        delay={result.viralOneLiner ? 340 : 240}
       >
         {result.threeFixes.map((f, i) => (
           <View key={i} style={styles.listItem}>
@@ -320,11 +330,12 @@ export function RoastResultView({ result, meta, onNewRoast }: Props) {
         ))}
       </ResultCard>
 
+      {/* ── 6. IMPROVED VERSION ── */}
       <ResultCard
         icon="star"
         accentColor={colors.primary}
         title="IMPROVED VERSION"
-        delay={300}
+        delay={result.viralOneLiner ? 400 : 300}
       >
         <View
           style={[
@@ -341,6 +352,20 @@ export function RoastResultView({ result, meta, onNewRoast }: Props) {
         </View>
       </ResultCard>
 
+      {/* ── Original Prompt (history detail view only — when no onNewRoast) ── */}
+      {!onNewRoast && meta?.originalPrompt && (
+        <ResultCard
+          icon="file-text"
+          accentColor="#6b7280"
+          title="ORIGINAL PROMPT"
+          delay={0}
+        >
+          <Text style={[styles.promptText, { color: colors.mutedForeground }]}>
+            {meta.originalPrompt}
+          </Text>
+        </ResultCard>
+      )}
+
       {/* ── Bottom New Roast button ── */}
       <NewRoastButton onPress={onNewRoast} variant="filled" />
     </View>
@@ -349,7 +374,7 @@ export function RoastResultView({ result, meta, onNewRoast }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    gap: 10,
+    gap: 12,
   },
   headerRow: {
     flexDirection: "row",
@@ -460,7 +485,7 @@ const styles = StyleSheet.create({
   roastText: {
     fontSize: 15,
     fontFamily: "Inter_500Medium",
-    lineHeight: 25,
+    lineHeight: 26,
   },
   bodyText: {
     fontSize: 14,

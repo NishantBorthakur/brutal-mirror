@@ -1,0 +1,166 @@
+You are now upgrading Brutal Mirror from a simple AI tool into a viral-quality product.
+
+Your task is to dramatically improve the output quality, personality, and user experience of the app.
+
+This is the highest priority task.
+
+GOALS:
+- Make the roasts sharper
+- Make outputs more memorable
+- Make users laugh, feel attacked, and still get useful advice
+- Make responses feel like a premium AI personality, not generic ChatGPT output
+- Increase virality and screenshot-worthiness
+
+Implement the following improvements immediately:
+
+==================================================
+1. MASSIVELY IMPROVE SYSTEM PROMPT
+==================================================
+
+Replace the current system prompt with a much stronger one.
+
+The AI should:
+- sound brutally observant
+- use punchy short sentences
+- make witty comparisons
+- expose generic thinking
+- avoid corporate-sounding advice
+- feel emotionally intelligent
+- feel like an elite brutally honest consultant
+
+The AI must:
+- roast
+- diagnose
+- explain WHY it fails
+- suggest fixes
+- rewrite it better
+
+The tone should feel like:
+- a savage creative director
+- an elite startup advisor
+- a brutally honest strategist
+- internet-level witty commentary
+
+But still safe:
+- no hate speech
+- no slurs
+- no threats
+- no targeting protected traits
+
+Examples of GOOD style:
+- “This sounds like a startup built entirely from LinkedIn buzzwords.”
+- “Your bio has the personality of airport wallpaper.”
+- “This feels like you asked AI to generate a personality and forgot to edit it.”
+- “You’re trying to sound premium while saying absolutely nothing.”
+
+The AI should NEVER sound repetitive or robotic.
+
+==================================================
+2. ADD VIRAL ONE-LINERS
+==================================================
+
+Add a new section to the JSON response:
+
+"viralOneLiner": "..."
+
+This should contain:
+- one short devastating line
+- highly screenshot-worthy
+- funny and sharp
+- ideally under 20 words
+
+Examples:
+- “This startup sounds like productivity flavored oatmeal.”
+- “Your dating profile has strong NPC energy.”
+- “This bio could be replaced by a motivational fridge magnet.”
+
+Display this section prominently at the top of the results.
+
+==================================================
+3. ADD SHARE CARD GENERATOR
+==================================================
+
+Add a beautiful share card UI section.
+
+The share card should:
+- highlight the Viral One-Liner
+- use the app’s purple gradient branding
+- feel premium and dark
+- be optimized for screenshots/social media
+
+Include:
+- Copy Quote button
+- Download PNG button if possible
+- Smooth animation when shown
+
+==================================================
+4. IMPROVE RESULT STRUCTURE
+==================================================
+
+The result cards should now appear in this order:
+
+1. Viral One-Liner
+2. Brutal Roast
+3. Actual Diagnosis
+4. Biggest Weaknesses
+5. 3 Fixes
+6. Improved Version
+
+==================================================
+5. MAKE THE APP FEEL FASTER
+==================================================
+
+While generating:
+- show animated loading messages
+- rotate between messages like:
+  - “Analyzing your bad decisions…”
+  - “Finding the personality flaws…”
+  - “Generating emotional damage…”
+  - “Searching for originality…”
+  - “Consulting the council of judgment…”
+
+Change every 2 seconds.
+
+==================================================
+6. POLISH THE UI
+==================================================
+
+Improve:
+- spacing
+- card hierarchy
+- typography
+- shadows
+- animations
+- transitions
+- mobile responsiveness
+
+The app should feel:
+- cinematic
+- dark luxury
+- addictive
+- polished enough to go viral
+
+Do NOT redesign the entire app.
+Keep the current color palette:
+- #6d28d9
+- #8b5cf6
+- #a78bfa
+
+==================================================
+7. IMPORTANT
+==================================================
+
+Do not:
+- add authentication
+- add database
+- add payments
+- add social feed
+- add unnecessary complexity
+
+Focus ONLY on:
+- output quality
+- virality
+- polish
+- emotional impact
+
+The app should feel dangerous, intelligent, and screenshot-worthy.

@@ -21,7 +21,7 @@ import {
 
 import { useRoast } from "@/context/RoastContext";
 import { useColors } from "@/hooks/useColors";
-import { LoadingDots } from "./LoadingDots";
+import { LoadingMessages } from "./LoadingMessages";
 
 export interface RoastFormHandle {
   reset: () => void;
@@ -235,7 +235,6 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
 
     const buttonScale = useRef(new Animated.Value(1)).current;
 
-    // Expose reset() to parent via ref
     useImperativeHandle(ref, () => ({
       reset: () => {
         setContent("");
@@ -437,15 +436,12 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
               }
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={[styles.submitButton, { opacity: isLoading ? 0.8 : 1 }]}
+              style={[styles.submitButton, { opacity: isLoading ? 0.85 : 1 }]}
             >
               {isLoading ? (
-                <View style={styles.loadingRow}>
-                  <LoadingDots color="#fff" size={7} spacing={5} />
-                  <Text style={styles.submitText}>Analyzing…</Text>
-                </View>
+                <LoadingMessages />
               ) : (
-                <View style={styles.loadingRow}>
+                <View style={styles.btnContent}>
                   <Feather name="zap" size={18} color="#fff" />
                   <Text style={styles.submitText}>Roast Me</Text>
                 </View>
@@ -531,10 +527,12 @@ const styles = StyleSheet.create({
   submitButton: {
     borderRadius: 16,
     paddingVertical: 20,
+    paddingHorizontal: 24,
     alignItems: "center",
     justifyContent: "center",
+    minHeight: 64,
   },
-  loadingRow: {
+  btnContent: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,

@@ -9,6 +9,7 @@ import React, {
 } from "react";
 
 export interface RoastResult {
+  viralOneLiner?: string; // optional — older history items may not have it
   brutalRoast: string;
   actualDiagnosis: string;
   biggestWeaknesses: string[];
@@ -21,7 +22,7 @@ export interface RoastHistoryItem {
   category: string;
   intensity: string;
   contentPreview: string;
-  originalPrompt?: string; // full original input — optional for backward compat
+  originalPrompt?: string;
   result: RoastResult;
   createdAt: string;
 }
@@ -113,9 +114,8 @@ export function RoastProvider({ children }: { children: React.ReactNode }) {
           id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
           category,
           intensity,
-          contentPreview:
-            content.slice(0, 80) + (content.length > 80 ? "…" : ""),
-          originalPrompt: content, // store full prompt
+          contentPreview: content.slice(0, 80) + (content.length > 80 ? "…" : ""),
+          originalPrompt: content,
           result,
           createdAt: new Date().toISOString(),
         };
