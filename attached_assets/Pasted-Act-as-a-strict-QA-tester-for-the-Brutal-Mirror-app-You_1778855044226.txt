@@ -1,0 +1,398 @@
+Act as a strict QA tester for the Brutal Mirror app.
+
+Your job is to test the latest version of the app end-to-end and identify bugs, UX issues, broken logic, missing output fields, console errors, mobile layout problems, and backend/API problems.
+
+Do not modify the app yet unless explicitly asked. First test and report issues clearly.
+
+==================================================
+QA OBJECTIVE
+==================================================
+
+Test whether Brutal Mirror works as a polished premium AI roast/report product.
+
+The app should support:
+- Category selection
+- Intensity selection
+- Roast Personality selection
+- Example chips
+- AI roast generation
+- Viral one-liner
+- Roast Report scores
+- Result tabs
+- Before vs After section
+- Share card
+- Copy buttons
+- Regeneration buttons
+- History storage
+- New Roast reset behavior
+- Validation handling
+- Mobile responsiveness
+- No horizontal scrolling
+- Clean error handling
+
+==================================================
+GENERAL QA CHECKLIST
+==================================================
+
+Check the following first:
+
+1. App loads without crashing.
+2. No console errors on initial load.
+3. UI is mobile-first and responsive.
+4. No horizontal scrolling on mobile.
+5. Buttons do not overflow.
+6. Text wraps properly in result cards.
+7. Loading states appear correctly.
+8. API errors are displayed cleanly.
+9. Old history items do not break the app.
+10. Copy buttons work.
+11. New Roast button clears the input and resets the result.
+12. Result section scrolls into view after generation.
+13. History stores original prompt, category, intensity, personality, date/time, and result.
+14. Result tabs work correctly.
+15. Score bars render correctly.
+16. Regeneration buttons call the backend and update the output.
+17. Usage limit, if implemented, does not incorrectly count failed attempts.
+
+==================================================
+TEST CASE 1 — STARTUP INVESTOR MODE
+==================================================
+
+Category:
+Startup Idea
+
+Intensity:
+Brutal
+
+Roast Personality:
+Startup Investor
+
+Input:
+I want to build an AI productivity app that helps users manage tasks, track habits, get motivational quotes, organize their calendar, write goals, and become the best version of themselves.
+
+Expected:
+- Viral one-liner appears at the top.
+- Score report appears.
+- Originality score should be low.
+- Cringe level should be medium or high.
+- Roast should criticize generic productivity positioning.
+- Diagnosis should mention lack of differentiation.
+- Fixes should suggest a specific user segment or sharper use case.
+- Improved version should be more niche and marketable.
+- Result tabs should work.
+- Share card should show the viral one-liner.
+
+==================================================
+TEST CASE 2 — INSTAGRAM BIO / CREATIVE DIRECTOR
+==================================================
+
+Category:
+Instagram Bio
+
+Intensity:
+Harsh
+
+Roast Personality:
+Creative Director
+
+Input:
+Entrepreneur | Creator | Dreamer
+Helping people unlock their potential
+Good vibes only
+DM for collabs
+
+Expected:
+- Output should criticize generic personal-brand language.
+- Score report should show poor originality and clarity.
+- Fixes should suggest a more specific audience and value proposition.
+- Before vs After should show a stronger rewritten bio.
+- Share card should display a strong viral one-liner.
+- Copy Quote should work.
+
+==================================================
+TEST CASE 3 — DATING PROFILE / DATING COACH
+==================================================
+
+Category:
+Dating Profile
+
+Intensity:
+Brutal
+
+Roast Personality:
+Dating Coach
+
+Input:
+I like food, travel, music, movies, and having fun. Looking for someone genuine who doesn’t take life too seriously. Let’s see where things go.
+
+Expected:
+- Output should call out the profile as boring and generic.
+- Diagnosis should mention lack of personality, specificity, and emotional hook.
+- Fixes should suggest concrete details and stronger self-presentation.
+- Improved version should sound more confident and specific.
+- Output should be funny but not abusive or unsafe.
+
+==================================================
+TEST CASE 4 — RESUME SUMMARY / RESUME RECRUITER
+==================================================
+
+Category:
+Resume Summary
+
+Intensity:
+Harsh
+
+Roast Personality:
+Resume Recruiter
+
+Input:
+Hardworking and motivated professional with experience in sales, management, operations, technology, and communication. Passionate about solving problems and helping companies grow.
+
+Expected:
+- Output should criticize vague resume clichés.
+- Score report should show low clarity and low marketability.
+- Diagnosis should mention lack of metrics, role focus, and proof.
+- Fixes should ask for measurable results and specific skills.
+- Improved version should sound like a stronger professional summary.
+
+==================================================
+TEST CASE 5 — MOBILE APP IDEA / INTERNET TROLL
+==================================================
+
+Category:
+Mobile App Idea
+
+Intensity:
+Brutal
+
+Roast Personality:
+Internet Troll, but useful
+
+Input:
+I want to create a social media app where people can post pictures, follow friends, chat, share stories, discover content, and build communities around their interests.
+
+Expected:
+- Output should point out that the idea is basically recycled Instagram/Snapchat/Reddit.
+- Viral one-liner should be especially funny.
+- Score report should show very low originality.
+- Fixes should force a niche, unique mechanic, or underserved audience.
+- Improved version should be dramatically more specific.
+- Output should remain safe and constructive.
+
+==================================================
+TEST CASE 6 — BUSINESS NAME / SAVAGE MENTOR
+==================================================
+
+Category:
+Business Name
+
+Intensity:
+Brutal
+
+Roast Personality:
+Savage Mentor
+
+Input:
+The business name is GrowthifyPro. It is a platform that helps entrepreneurs grow their business using AI tools, marketing automation, and productivity features.
+
+Expected:
+- Output should roast the name as generic SaaS naming.
+- Diagnosis should mention weak memorability and overused suffixes.
+- Fixes should suggest a naming direction, not just random names.
+- Improved version should include better positioning or name alternatives.
+
+==================================================
+TEST CASE 7 — EXAMPLE CHIP TEST
+==================================================
+
+Click each example chip:
+- Roast my startup idea
+- Destroy my Instagram bio
+- Fix my dating profile
+- Judge my app idea
+- Rewrite my resume summary
+
+Expected:
+- Category updates automatically.
+- Textarea fills with sample input.
+- Textarea focuses or scrolls into view.
+- Character counter updates.
+- Generate button becomes available.
+- No console errors occur.
+
+==================================================
+TEST CASE 8 — REGENERATION BUTTONS
+==================================================
+
+Generate a roast using:
+
+Category:
+Startup Idea
+
+Intensity:
+Harsh
+
+Roast Personality:
+Startup Investor
+
+Input:
+I want to build a platform where small businesses can use AI to automate marketing, sales, customer support, invoicing, analytics, and team collaboration from one dashboard.
+
+Then click:
+- Make it sharper
+- Make it funnier
+- Make it more professional
+
+Expected:
+- Each button calls the backend again.
+- Same original input is reused.
+- Output tone changes based on selected refinement.
+- Loading state appears correctly.
+- Result updates without breaking layout.
+- History does not break.
+- No duplicate or corrupted state appears.
+
+==================================================
+TEST CASE 9 — HISTORY STORAGE TEST
+==================================================
+
+Generate any roast, save it, then open it from history.
+
+Expected:
+- History item shows category.
+- History item shows intensity.
+- History item shows personality mode.
+- History item shows date/time.
+- History item shows original prompt preview.
+- History item shows viral one-liner preview.
+- Opening saved item restores full result.
+- Original prompt appears in the result view.
+- Old saved roasts without scoreReport/personality do not crash the app.
+- Clear history works.
+
+==================================================
+TEST CASE 10 — VALIDATION TEST
+==================================================
+
+Input:
+Bad idea
+
+Expected:
+- Validation error appears.
+- Backend is not called.
+- No roast is generated.
+- Usage count does not increase.
+- UI does not crash.
+
+==================================================
+TEST CASE 11 — EMPTY INPUT TEST
+==================================================
+
+Input:
+[leave textarea empty]
+
+Expected:
+- Clean validation error appears.
+- Backend is not called.
+- Generate button should be disabled or should show error.
+- Usage count does not increase.
+- No console errors.
+
+==================================================
+TEST CASE 12 — LONG INPUT TEST
+==================================================
+
+Paste around 2500–3000 characters into the textarea.
+
+Expected:
+- Character counter works.
+- Input does not break the layout.
+- Generate button works if under the limit.
+- App does not freeze.
+- Result cards wrap text properly.
+- No horizontal scrolling.
+
+==================================================
+TEST CASE 13 — NEW ROAST BUTTON TEST
+==================================================
+
+After generating a roast, click every New Roast button available.
+
+Expected:
+- Textarea clears completely.
+- Result disappears or resets.
+- Validation errors reset.
+- App scrolls back to the generator form.
+- Category and intensity can remain selected.
+- No layout glitches occur.
+- No old result remains visible.
+
+==================================================
+TEST CASE 14 — COPY AND SHARE TEST
+==================================================
+
+After generating a roast, test:
+- Copy Result
+- Copy Quote
+- Download PNG, if implemented
+
+Expected:
+- Copy Result copies a readable formatted full result.
+- Copy Quote copies only the viral one-liner.
+- Download PNG creates a usable image file if implemented.
+- Buttons show confirmation feedback.
+- No console errors.
+
+==================================================
+TEST CASE 15 — MOBILE RESPONSIVENESS
+==================================================
+
+Test at these viewport sizes:
+- 390 x 844
+- 375 x 667
+- 430 x 932
+- 768 x 1024
+- Desktop width
+
+Expected:
+- No horizontal scrolling.
+- Tabs remain usable.
+- Buttons wrap properly.
+- Text remains readable.
+- Result cards are not cramped.
+- History section remains usable.
+- Modal/card elements fit on screen.
+
+==================================================
+FINAL QA REPORT FORMAT
+==================================================
+
+Return a structured QA report with:
+
+1. Summary:
+- Overall pass/fail
+- Major blockers
+- Minor issues
+
+2. Bugs Found:
+For each bug include:
+- Issue title
+- Severity: Critical / High / Medium / Low
+- Steps to reproduce
+- Expected behavior
+- Actual behavior
+- Suggested fix
+
+3. UX Issues:
+- List any awkward flows, spacing problems, confusing labels, poor hierarchy, or mobile usability issues.
+
+4. Backend/API Issues:
+- JSON parsing issues
+- Missing fields
+- Failed requests
+- Error handling problems
+
+5. Final Recommendation:
+- Whether the app is ready for demo
+- What should be fixed before launch
+- What can wait

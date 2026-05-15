@@ -4,6 +4,7 @@ import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Animated,
   ScrollView,
   StyleSheet,
@@ -593,6 +594,24 @@ export function RoastResultView({
         )}
       </Animated.View>
 
+      {/* ── Refinement loading banner ── */}
+      {isLoading && (
+        <View
+          style={[
+            styles.loadingBanner,
+            {
+              backgroundColor: colors.primary + "12",
+              borderColor: colors.primary + "30",
+            },
+          ]}
+        >
+          <ActivityIndicator size="small" color={colors.primary} />
+          <Text style={[styles.loadingBannerText, { color: colors.primary }]}>
+            Generating refined roast…
+          </Text>
+        </View>
+      )}
+
       {/* ── Tab bar ── */}
       <TabBar active={activeTab} onSelect={switchTab} />
 
@@ -787,5 +806,18 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     textAlign: "center",
     lineHeight: 20,
+  },
+  loadingBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  loadingBannerText: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
   },
 });

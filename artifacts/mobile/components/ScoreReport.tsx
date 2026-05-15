@@ -16,6 +16,8 @@ function ScoreBar({ label, value, color, delay }: BarProps) {
   const widthAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Reset to 0 first so bars re-animate on every new result (including refinements).
+    widthAnim.setValue(0);
     Animated.timing(widthAnim, {
       toValue: Math.min(100, Math.max(0, value)),
       duration: 700,
@@ -68,6 +70,7 @@ export function ScoreReport({ scores, delay = 0 }: Props) {
   const overallAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    overallAnim.setValue(0);
     Animated.timing(overallAnim, {
       toValue: scores.overallRoastScore,
       duration: 800,

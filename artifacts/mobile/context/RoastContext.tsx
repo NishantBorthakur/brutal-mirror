@@ -104,7 +104,11 @@ export function RoastProvider({ children }: { children: React.ReactNode }) {
     ) => {
       setIsLoading(true);
       setError(null);
-      setCurrentResult(null);
+      // Only wipe the current result for fresh roasts, not refinements.
+      // During refinement the result view stays visible while the new result loads.
+      if (!refinementMode) {
+        setCurrentResult(null);
+      }
 
       try {
         const domain = process.env.EXPO_PUBLIC_DOMAIN;

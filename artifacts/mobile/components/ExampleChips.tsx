@@ -128,6 +128,5 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
-    whiteSpace: "nowrap",
   },
 });
