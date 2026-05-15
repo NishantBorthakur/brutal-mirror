@@ -14,6 +14,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ToastProvider } from "@/components/Toast";
 import { RoastProvider } from "@/context/RoastContext";
 
 SplashScreen.preventAutoHideAsync();
@@ -24,7 +25,6 @@ function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="history" />
     </Stack>
   );
 }
@@ -52,7 +52,9 @@ export default function RootLayout() {
           <GestureHandlerRootView>
             <KeyboardProvider>
               <RoastProvider>
-                <RootLayoutNav />
+                <ToastProvider>
+                  <RootLayoutNav />
+                </ToastProvider>
               </RoastProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>

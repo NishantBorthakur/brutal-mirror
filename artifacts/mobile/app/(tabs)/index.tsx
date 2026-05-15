@@ -1,18 +1,18 @@
 import { Feather } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import React, { useCallback, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Image,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { ONBOARDING_KEY, OnboardingCard } from "@/components/OnboardingCard";
 import { type RoastFormHandle, RoastForm } from "@/components/RoastForm";
 import { RoastResultView } from "@/components/RoastResultView";
 import { useRoast } from "@/context/RoastContext";
@@ -24,13 +24,19 @@ const APP_ICON = require("@/assets/images/icon.png") as number;
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const router = useRouter();
-  const { currentResult, currentMeta, clearResult, history, generateRoast, isLoading } =
-    useRoast();
+  const { currentResult, currentMeta, clearResult, generateRoast, isLoading } = useRoast();
 
   const scrollRef = useRef<ScrollView>(null);
   const resultYRef = useRef<number>(0);
   const formRef = useRef<RoastFormHandle>(null);
+
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem(ONBOARDING_KEY)
+      .then((val) => { if (!val) setShowOnboarding(true); })
+      .catch(() => {});
+  }, []);
 
   const scrollToResult = () => {
     setTimeout(() => {
@@ -38,9 +44,7 @@ export default function HomeScreen() {
     }, 120);
   };
 
-  const scrollToTop = () => {
-    scrollRef.current?.scrollTo({ y: 0, animated: true });
-  };
+  const scrollToTop = () => scrollRef.current?.scrollTo({ y: 0, animated: true });
 
   const handleNewRoast = () => {
     formRef.current?.reset();
@@ -64,7 +68,6 @@ export default function HomeScreen() {
   );
 
   const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
-  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -79,64 +82,48 @@ export default function HomeScreen() {
           },
         ]}
       >
-        <View style={styles.headerLeft}>
-          <View style={styles.logoRow}>
-            <Image source={APP_ICON} style={styles.logoImage} />
-            <View>
-              <Text style={[styles.appName, { color: colors.foreground }]}>
-                Brutal Mirror
-              </Text>
-              <Text style={[styles.appTagline, { color: colors.mutedForeground }]}>
-                Get roasted. Then get better.
-              </Text>
-            </View>
+        <View style={styles.logoRow}>
+          <Image source={APP_ICON} style={styles.logoImage} />
+          <View>
+            <Text style={[styles.appName, { color: colors.foreground }]}>
+              Brutal Mirror
+            </Text>
+            <Text style={[styles.appTagline, { color: colors.mutedForeground }]}>
+              Brutal feedback. Better results.
+            </Text>
           </View>
         </View>
-
-        <TouchableOpacity
-          style={[
-            styles.historyBtn,
-            { borderColor: colors.border, backgroundColor: colors.card },
-          ]}
-          onPress={() => router.push("/history")}
-          activeOpacity={0.7}
-        >
-          <Feather name="clock" size={17} color={colors.mutedForeground} />
-          {history.length > 0 && (
-            <View style={[styles.historyBadge, { backgroundColor: colors.primary }]}>
-              <Text style={styles.historyBadgeText}>
-                {history.length > 9 ? "9+" : history.length}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
       </View>
 
       {/* ── Scroll body ── */}
       <ScrollView
         ref={scrollRef}
         style={{ flex: 1 }}
-        contentContainerStyle={[styles.scroll, { paddingBottom: bottomPad + 32 }]}
+        contentContainerStyle={[styles.scroll, { paddingBottom: 32 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
       >
+        {/* Onboarding card — first visit only */}
+        {showOnboarding && (
+          <OnboardingCard onDismiss={() => setShowOnboarding(false)} />
+        )}
+
         {/* Hero — only shown when no result */}
-        {!currentResult && (
+        {!currentResult && !showOnboarding && (
           <View style={styles.hero}>
             <LinearGradient
               colors={["#7c3aed22", "#8b5cf610", "transparent"]}
               style={styles.heroBg}
             />
-            {/* Subtle glow orb */}
             <View style={styles.heroGlow} />
-
             <Text style={[styles.heroHeadline, { color: colors.foreground }]}>
               Your idea is not special.{"\n"}
               <Text style={{ color: colors.primary }}>Let's fix that.</Text>
             </Text>
             <Text style={[styles.heroSubheadline, { color: colors.mutedForeground }]}>
-              Paste your bio, startup idea, profile, resume, or app concept. Brutal Mirror will roast it, diagnose it, and rebuild it sharper.
+              Paste your bio, startup idea, profile, resume, or app concept.
+              Brutal Mirror will roast it, diagnose it, and rebuild it sharper.
             </Text>
             <View style={[styles.microCopyRow, { borderColor: colors.border }]}>
               <Feather name="zap" size={12} color={colors.mutedForeground} />
@@ -193,36 +180,14 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingBottom: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  headerLeft: { flex: 1 },
   logoRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   logoImage: { width: 36, height: 36, borderRadius: 10 },
   appName: { fontSize: 18, fontFamily: "Inter_700Bold", letterSpacing: -0.3 },
   appTagline: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 1 },
-  historyBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  historyBadge: {
-    position: "absolute",
-    top: -5,
-    right: -5,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 4,
-  },
-  historyBadgeText: { color: "#fff", fontSize: 10, fontFamily: "Inter_700Bold" },
   scroll: { paddingHorizontal: 20, paddingTop: 24, gap: 20 },
   hero: {
     position: "relative",
@@ -262,11 +227,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     marginTop: 2,
   },
-  microCopy: {
-    fontSize: 12,
-    fontFamily: "Inter_500Medium",
-    letterSpacing: 0.1,
-  },
+  microCopy: { fontSize: 12, fontFamily: "Inter_500Medium" },
   resultSection: { gap: 16, marginTop: 12, paddingTop: 8 },
   resultDivider: { flexDirection: "row", alignItems: "center", gap: 10 },
   dividerLine: { flex: 1, height: 1 },
@@ -278,5 +239,10 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 20,
   },
-  dividerText: { color: "#fff", fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.8 },
+  dividerText: {
+    color: "#fff",
+    fontSize: 10,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 0.8,
+  },
 });

@@ -1,0 +1,335 @@
+Review the existing Brutal Mirror codebase first.
+
+Now upgrade the app so it feels like a professional, premium mobile app ready for distribution.
+
+Do not add authentication.
+Do not add payments.
+Do not add database.
+Do not add screenshot/image analysis.
+Do not break existing AI generation.
+Do not remove existing working features.
+
+The goal is to improve the complete user experience, visual quality, information architecture, mobile polish, and perceived product value.
+
+==================================================
+1. CREATE A PROFESSIONAL APP SHELL
+==================================================
+
+Add a proper mobile-first app shell.
+
+Include:
+- Top app bar/header
+- Logo/icon area
+- App name: Brutal Mirror
+- Small tagline: “Brutal feedback. Better results.”
+- Clean navigation structure
+- Safe-area padding for mobile devices
+- Consistent max-width container on desktop
+- Better vertical rhythm and spacing
+
+The header should feel premium:
+- Dark translucent background
+- Subtle blur if appropriate
+- Thin border or glow
+- Purple accent using #8b5cf6
+
+Make sure it looks good on:
+- iPhone-sized screens
+- tablets
+- desktop
+
+==================================================
+2. ADD SIMPLE BOTTOM NAVIGATION
+==================================================
+
+Add a mobile-friendly bottom navigation with 3 sections:
+
+- Roast
+- History
+- Settings
+
+Behavior:
+- Roast shows the generator and result flow.
+- History shows saved roasts.
+- Settings shows lightweight preferences/info.
+- On desktop, navigation can appear as tabs or a top/side layout if better.
+
+Do not use routing unless already implemented. Simple state-based navigation is fine.
+
+Bottom nav style:
+- Fixed at bottom on mobile
+- Dark glassmorphism/premium style
+- Purple active state
+- Large tap targets
+- No horizontal overflow
+- Respect mobile safe area
+
+==================================================
+3. IMPROVE THE FIRST-TIME EXPERIENCE
+==================================================
+
+Add a first-time welcome/onboarding card shown only if the user has not dismissed it.
+
+Store dismissal in localStorage.
+
+Welcome card content:
+Title:
+“Welcome to Brutal Mirror”
+
+Body:
+“Paste an idea, bio, profile, resume, or plan. Get a savage diagnosis, practical fixes, and a better version.”
+
+Add 3 short feature bullets:
+- “Roast Report scores”
+- “Before vs After rewrites”
+- “Shareable one-liners”
+
+Buttons:
+- “Start Roasting”
+- “Skip”
+
+When the user clicks either button, hide the onboarding card and remember it in localStorage.
+
+Make this card premium and cinematic, not childish.
+
+==================================================
+4. UPGRADE THE GENERATOR FORM UX
+==================================================
+
+Make the generator section feel like a premium input console.
+
+Improve:
+- Category dropdown
+- Intensity dropdown
+- Roast Personality dropdown
+- Textarea
+- Character counter
+- Generate button
+- Example chips
+
+Specific requirements:
+- Group dropdowns in clean cards or rows.
+- Use better labels and helper text.
+- Make selected values visually obvious.
+- Textarea should feel large, focused, and premium.
+- Add subtle focus glow on input.
+- Keep the Roast Me button visually dominant.
+- Add sticky generate button on mobile only if it improves UX.
+- Keep minimum 20 character validation.
+- Keep 3000 character max.
+
+Add helper microcopy near the input:
+“Paste the thing you secretly know needs work.”
+
+==================================================
+5. MAKE RESULT VIEW FEEL LIKE A PREMIUM REPORT
+==================================================
+
+Upgrade the result view into a polished “Roast Report”.
+
+Keep existing sections:
+- Viral One-Liner
+- Score Report
+- Brutal Roast
+- Actual Diagnosis
+- Biggest Weaknesses
+- 3 Fixes
+- Before vs After
+- Improved Version
+- Share Card
+
+Improve presentation:
+- Add report header with category, intensity, personality, and timestamp.
+- Add a “Report ID” style small label, generated locally.
+- Add better hierarchy between tabs/sections.
+- Improve score bars and score cards.
+- Use subtle entrance animations.
+- Make the viral one-liner feel like the hero of the result.
+- Make Before vs After visually strong and easy to compare.
+- Make all long text wrap properly.
+- No horizontal scrolling.
+
+Add bottom action bar after the report:
+- Copy Result
+- New Roast
+- Save to History
+- Make it sharper
+- Make it funnier
+- Make it more professional
+
+Ensure actions are responsive and do not overflow.
+
+==================================================
+6. IMPROVE SHARE CARD QUALITY
+==================================================
+
+Make the share card look premium enough for social media.
+
+Requirements:
+- Purple gradient background using:
+  #6d28d9
+  #8b5cf6
+  #a78bfa
+- Dark luxury styling
+- Viral one-liner prominent
+- Small Brutal Mirror branding
+- Clean border/glow
+- Good spacing
+- Looks good as screenshot
+- Works on mobile
+
+If Download PNG exists, ensure it works.
+If Download PNG is buggy, hide it or make it stable.
+Copy Quote must work reliably.
+
+==================================================
+7. UPGRADE HISTORY INTO A “ROAST VAULT”
+==================================================
+
+Rename or visually style History as “Roast Vault”.
+
+Each saved item should display:
+- Viral one-liner preview
+- Category
+- Intensity
+- Personality
+- Date/time
+- Original prompt preview
+- Score summary if available
+
+Add:
+- Search/filter input for saved roasts
+- Filter by category if easy
+- Empty state:
+  “No emotional damage archived yet.”
+  “Save a roast and it will appear here.”
+
+Actions for each saved item:
+- Open
+- Delete
+- Copy quote if viral one-liner exists
+
+Opening a saved roast should restore the full result view.
+
+Old saved history items must not crash the app.
+
+==================================================
+8. ADD SETTINGS SCREEN
+==================================================
+
+Add a lightweight Settings screen.
+
+Sections:
+
+A. Defaults
+- Default category
+- Default intensity
+- Default roast personality
+Store preferences in localStorage.
+Use these defaults when the app loads.
+
+B. Data
+- Clear all saved roasts
+- Reset onboarding
+
+C. About
+Show:
+- Brutal Mirror
+- “Brutal feedback. Better results.”
+- Version: MVP 1.0
+- Short note:
+  “AI feedback can be wrong. Use judgment before acting on any advice.”
+
+Do not add login or payments.
+
+==================================================
+9. ADD PROFESSIONAL EMPTY, LOADING, AND ERROR STATES
+==================================================
+
+Improve all states.
+
+Loading:
+Use rotating loading lines:
+- “Judging the damage…”
+- “Searching for originality…”
+- “Measuring cringe levels…”
+- “Calling the council of brutal honesty…”
+- “Rebuilding something usable…”
+
+Error:
+Make errors clean and useful.
+Examples:
+- “The roast engine failed. Try again.”
+- “Your input is too short to destroy properly.”
+- “The AI returned a messy response. Try again.”
+
+Empty:
+No blank screens. Every empty area should have helpful copy and CTA.
+
+==================================================
+10. ADD POLISHED MICRO-INTERACTIONS
+==================================================
+
+Add subtle professional interactions:
+- Button press animation
+- Hover glow on desktop
+- Active nav state
+- Toast notifications
+- Smooth scrolling
+- Result card entrance animation
+- Input focus glow
+- Copy success feedback
+- Save success feedback
+- Delete confirmation if appropriate
+
+Keep animations lightweight and tasteful.
+
+Do not make the app flashy or slow.
+
+==================================================
+11. MOBILE QA REQUIREMENTS
+==================================================
+
+Make sure the final app passes these checks:
+
+- No horizontal scrolling
+- Bottom nav does not cover important content
+- Forms are easy to use on mobile
+- CTA buttons are large enough
+- Result tabs are usable on small screens
+- Long AI output wraps properly
+- Share card fits screen width
+- History cards fit screen width
+- Settings screen fits screen width
+- Desktop layout does not look stretched
+- App still works if localStorage is empty
+- App still works if old saved roasts are missing fields
+- No console errors
+
+==================================================
+12. DO NOT BREAK EXISTING FEATURES
+==================================================
+
+Existing features that must continue working:
+
+- AI roast generation
+- Category selection
+- Intensity selection
+- Roast Personality
+- Example chips
+- Viral one-liner
+- Score Report
+- Result tabs
+- Before vs After
+- Share card
+- Copy result
+- Copy quote
+- New Roast clearing input
+- Save/open history
+- Clear history
+- Regeneration buttons
+- Validation
+- Loading states
+- Error handling
+
+After implementation, test the app manually and fix any runtime errors.

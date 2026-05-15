@@ -38,6 +38,18 @@ export interface RoastHistoryItem {
   createdAt: string;
 }
 
+export interface AppSettings {
+  defaultCategory: string;
+  defaultIntensity: string;
+  defaultPersonality: string;
+}
+
+const DEFAULT_SETTINGS: AppSettings = {
+  defaultCategory: "Startup Idea",
+  defaultIntensity: "Brutal",
+  defaultPersonality: "Savage Mentor",
+};
+
 interface RoastMeta {
   category: string;
   intensity: string;
@@ -51,6 +63,8 @@ interface RoastContextValue {
   currentMeta: RoastMeta | null;
   isLoading: boolean;
   error: string | null;
+  settings: AppSettings;
+  settingsLoaded: boolean;
   generateRoast: (
     category: string,
     intensity: string,
@@ -59,12 +73,15 @@ interface RoastContextValue {
     refinementMode?: string
   ) => Promise<void>;
   clearHistory: () => Promise<void>;
+  deleteHistoryItem: (id: string) => Promise<void>;
   clearResult: () => void;
+  updateSettings: (partial: Partial<AppSettings>) => Promise<void>;
 }
 
 const RoastContext = createContext<RoastContextValue | null>(null);
 
 const HISTORY_KEY = "brutal_mirror_history";
+const SETTINGS_KEY = "brutal_mirror_settings";
 const MAX_HISTORY = 20;
 
 export function RoastProvider({ children }: { children: React.ReactNode }) {
@@ -73,25 +90,45 @@ export function RoastProvider({ children }: { children: React.ReactNode }) {
   const [currentMeta, setCurrentMeta] = useState<RoastMeta | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   const historyRef = useRef<RoastHistoryItem[]>([]);
 
   useEffect(() => {
-    AsyncStorage.getItem(HISTORY_KEY)
-      .then((raw) => {
-        if (raw) {
-          const parsed = JSON.parse(raw) as RoastHistoryItem[];
+    Promise.all([
+      AsyncStorage.getItem(HISTORY_KEY),
+      AsyncStorage.getItem(SETTINGS_KEY),
+    ]).then(([rawHistory, rawSettings]) => {
+      if (rawHistory) {
+        try {
+          const parsed = JSON.parse(rawHistory) as RoastHistoryItem[];
           setHistory(parsed);
           historyRef.current = parsed;
-        }
-      })
-      .catch(() => {});
+        } catch {}
+      }
+      if (rawSettings) {
+        try {
+          const parsed = JSON.parse(rawSettings) as Partial<AppSettings>;
+          setSettings({ ...DEFAULT_SETTINGS, ...parsed });
+        } catch {}
+      }
+      setSettingsLoaded(true);
+    }).catch(() => setSettingsLoaded(true));
   }, []);
 
   const saveHistory = useCallback(async (items: RoastHistoryItem[]) => {
     try {
       await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(items));
     } catch {}
+  }, []);
+
+  const updateSettings = useCallback(async (partial: Partial<AppSettings>) => {
+    setSettings((prev) => {
+      const next = { ...prev, ...partial };
+      AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(next)).catch(() => {});
+      return next;
+    });
   }, []);
 
   const generateRoast = useCallback(
@@ -104,8 +141,6 @@ export function RoastProvider({ children }: { children: React.ReactNode }) {
     ) => {
       setIsLoading(true);
       setError(null);
-      // Only wipe the current result for fresh roasts, not refinements.
-      // During refinement the result view stays visible while the new result loads.
       if (!refinementMode) {
         setCurrentResult(null);
       }
@@ -124,13 +159,13 @@ export function RoastProvider({ children }: { children: React.ReactNode }) {
 
         if (!response.ok) {
           const errData = data as { error: string };
-          throw new Error(errData.error || "Failed to generate roast");
+          throw new Error(errData.error || "The roast engine failed. Try again.");
         }
 
         const result = data as RoastResult;
 
         if (!result.brutalRoast || !result.actualDiagnosis) {
-          throw new Error("AI returned an incomplete response. Try again.");
+          throw new Error("The AI returned a messy response. Try again.");
         }
 
         setCurrentResult(result);
@@ -168,6 +203,13 @@ export function RoastProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.removeItem(HISTORY_KEY);
   }, []);
 
+  const deleteHistoryItem = useCallback(async (id: string) => {
+    const next = historyRef.current.filter((item) => item.id !== id);
+    historyRef.current = next;
+    setHistory(next);
+    await saveHistory(next);
+  }, [saveHistory]);
+
   const clearResult = useCallback(() => {
     setCurrentResult(null);
     setCurrentMeta(null);
@@ -182,9 +224,13 @@ export function RoastProvider({ children }: { children: React.ReactNode }) {
         currentMeta,
         isLoading,
         error,
+        settings,
+        settingsLoaded,
         generateRoast,
         clearHistory,
+        deleteHistoryItem,
         clearResult,
+        updateSettings,
       }}
     >
       {children}

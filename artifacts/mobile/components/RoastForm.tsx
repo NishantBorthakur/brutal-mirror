@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import React, {
   forwardRef,
+  useEffect,
   useImperativeHandle,
   useRef,
   useState,
@@ -140,7 +141,7 @@ function IntensityPickerModal({
               <TouchableOpacity
                 key={item.label}
                 style={[
-                  styles.intensityOption,
+                  styles.richOption,
                   {
                     backgroundColor: isSelected ? item.color + "18" : colors.secondary,
                     borderColor: isSelected ? item.color : colors.border,
@@ -149,12 +150,12 @@ function IntensityPickerModal({
                 onPress={() => { onSelect(item.label); onClose(); }}
                 activeOpacity={0.7}
               >
-                <Text style={styles.optionEmoji}>{item.emoji}</Text>
+                <Text style={styles.richEmoji}>{item.emoji}</Text>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.optionLabel, { color: isSelected ? item.color : colors.foreground }]}>
+                  <Text style={[styles.richLabel, { color: isSelected ? item.color : colors.foreground }]}>
                     {item.label}
                   </Text>
-                  <Text style={[styles.optionDesc, { color: colors.mutedForeground }]}>
+                  <Text style={[styles.richDesc, { color: colors.mutedForeground }]}>
                     {item.desc}
                   </Text>
                 </View>
@@ -195,7 +196,7 @@ function PersonalityPickerModal({
               <TouchableOpacity
                 key={item.label}
                 style={[
-                  styles.intensityOption,
+                  styles.richOption,
                   {
                     backgroundColor: isSelected ? item.color + "18" : colors.secondary,
                     borderColor: isSelected ? item.color : colors.border,
@@ -204,12 +205,12 @@ function PersonalityPickerModal({
                 onPress={() => { onSelect(item.label); onClose(); }}
                 activeOpacity={0.7}
               >
-                <Text style={styles.optionEmoji}>{item.icon}</Text>
+                <Text style={styles.richEmoji}>{item.icon}</Text>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.optionLabel, { color: isSelected ? item.color : colors.foreground }]}>
+                  <Text style={[styles.richLabel, { color: isSelected ? item.color : colors.foreground }]}>
                     {item.label}
                   </Text>
-                  <Text style={[styles.optionDesc, { color: colors.mutedForeground }]}>
+                  <Text style={[styles.richDesc, { color: colors.mutedForeground }]}>
                     {item.desc}
                   </Text>
                 </View>
@@ -230,11 +231,11 @@ export interface RoastFormProps {
 export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
   function RoastForm({ onResultReady }, ref) {
     const colors = useColors();
-    const { generateRoast, isLoading, error } = useRoast();
+    const { generateRoast, isLoading, error, settings, settingsLoaded } = useRoast();
 
-    const [category, setCategory] = useState(CATEGORIES[0]);
-    const [intensity, setIntensity] = useState("Brutal");
-    const [personality, setPersonality] = useState("Savage Mentor");
+    const [category, setCategory] = useState(settings.defaultCategory);
+    const [intensity, setIntensity] = useState(settings.defaultIntensity);
+    const [personality, setPersonality] = useState(settings.defaultPersonality);
     const [content, setContent] = useState("");
     const [validationError, setValidationError] = useState<string | null>(null);
     const [isFocused, setIsFocused] = useState(false);
@@ -243,6 +244,15 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
     const [showPersonalityModal, setShowPersonalityModal] = useState(false);
 
     const buttonScale = useRef(new Animated.Value(1)).current;
+
+    // Re-apply defaults when settings change (only if textarea is untouched)
+    useEffect(() => {
+      if (!content) {
+        setCategory(settings.defaultCategory);
+        setIntensity(settings.defaultIntensity);
+        setPersonality(settings.defaultPersonality);
+      }
+    }, [settings.defaultCategory, settings.defaultIntensity, settings.defaultPersonality]);
 
     useImperativeHandle(ref, () => ({
       reset: () => {
@@ -258,7 +268,6 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
 
     const charCount = content.length;
     const isOverLimit = charCount > MAX_LENGTH;
-    const isTooShort = charCount < MIN_LENGTH && charCount > 0;
     const currentIntensity = INTENSITIES.find((i) => i.label === intensity);
     const currentPersonality = PERSONALITIES.find((p) => p.label === personality);
 
@@ -269,11 +278,15 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
 
     const handleSubmit = async () => {
       if (charCount < MIN_LENGTH) {
-        setValidationError(`Enter at least ${MIN_LENGTH} characters`);
+        setValidationError(
+          charCount === 0
+            ? "Paste something to roast first."
+            : `Your input is too short to destroy properly. Add at least ${MIN_LENGTH} characters.`
+        );
         return;
       }
       if (isOverLimit) {
-        setValidationError(`Maximum ${MAX_LENGTH} characters allowed`);
+        setValidationError(`Maximum ${MAX_LENGTH} characters allowed.`);
         return;
       }
       setValidationError(null);
@@ -285,7 +298,6 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
     const textAreaBorderColor = (() => {
       if (validationError || error || isOverLimit) return colors.destructive;
       if (isFocused) return colors.primary;
-      if (isTooShort) return colors.primary + "50";
       return colors.border;
     })();
 
@@ -315,11 +327,11 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
         {/* Row 1: Category + Intensity */}
         <View style={styles.row}>
           <TouchableOpacity
-            style={[styles.selectorButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+            style={[styles.selectorBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
             onPress={() => setShowCategoryModal(true)}
             activeOpacity={0.7}
           >
-            <Text style={[styles.selectorLabel, { color: colors.mutedForeground }]}>Category</Text>
+            <Text style={[styles.selectorLabel, { color: colors.mutedForeground }]}>CATEGORY</Text>
             <View style={styles.selectorValueRow}>
               <Text style={[styles.selectorValue, { color: colors.foreground }]} numberOfLines={1}>
                 {category}
@@ -329,11 +341,11 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.selectorButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+            style={[styles.selectorBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
             onPress={() => setShowIntensityModal(true)}
             activeOpacity={0.7}
           >
-            <Text style={[styles.selectorLabel, { color: colors.mutedForeground }]}>Intensity</Text>
+            <Text style={[styles.selectorLabel, { color: colors.mutedForeground }]}>INTENSITY</Text>
             <View style={styles.selectorValueRow}>
               <Text style={[styles.selectorValue, { color: currentIntensity?.color ?? colors.primary }]}>
                 {intensity}
@@ -343,10 +355,10 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
           </TouchableOpacity>
         </View>
 
-        {/* Row 2: Personality (full width) */}
+        {/* Row 2: Personality */}
         <TouchableOpacity
           style={[
-            styles.personalityButton,
+            styles.personalityBtn,
             {
               backgroundColor: colors.card,
               borderColor: currentPersonality ? currentPersonality.color + "40" : colors.border,
@@ -355,16 +367,11 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
           onPress={() => setShowPersonalityModal(true)}
           activeOpacity={0.7}
         >
-          <Text style={[styles.selectorLabel, { color: colors.mutedForeground }]}>
-            Roast Personality
-          </Text>
+          <Text style={[styles.selectorLabel, { color: colors.mutedForeground }]}>ROAST PERSONALITY</Text>
           <View style={styles.selectorValueRow}>
             <Text style={styles.personalityEmoji}>{currentPersonality?.icon}</Text>
             <Text
-              style={[
-                styles.selectorValue,
-                { color: currentPersonality?.color ?? colors.primary, flex: 1 },
-              ]}
+              style={[styles.selectorValue, { color: currentPersonality?.color ?? colors.primary, flex: 1 }]}
               numberOfLines={1}
             >
               {personality}
@@ -389,10 +396,13 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
             { backgroundColor: colors.card, borderColor: textAreaBorderColor },
           ]}
         >
+          <Text style={[styles.textAreaHelper, { color: colors.mutedForeground }]}>
+            Paste the thing you secretly know needs work.
+          </Text>
           <TextInput
             style={[styles.textArea, { color: colors.foreground }]}
-            placeholder="Paste what you want brutally judged…"
-            placeholderTextColor={colors.mutedForeground}
+            placeholder="Your bio, idea, profile, resume…"
+            placeholderTextColor={colors.mutedForeground + "80"}
             multiline
             textAlignVertical="top"
             value={content}
@@ -467,28 +477,37 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
 const styles = StyleSheet.create({
   container: { gap: 12 },
   row: { flexDirection: "row", gap: 10 },
-  selectorButton: { flex: 1, borderRadius: 12, borderWidth: 1, padding: 14, gap: 5 },
-  personalityButton: { borderRadius: 12, borderWidth: 1, padding: 14, gap: 5 },
+  selectorBtn: { flex: 1, borderRadius: 12, borderWidth: 1, padding: 14, gap: 5 },
+  personalityBtn: { borderRadius: 12, borderWidth: 1, padding: 14, gap: 5 },
   selectorLabel: {
-    fontSize: 10,
-    fontFamily: "Inter_600SemiBold",
+    fontSize: 9,
+    fontFamily: "Inter_700Bold",
     textTransform: "uppercase",
-    letterSpacing: 0.8,
+    letterSpacing: 1,
   },
   selectorValueRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  selectorValue: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  selectorValue: { fontSize: 14, fontFamily: "Inter_600SemiBold", flexShrink: 1 },
   personalityEmoji: { fontSize: 16 },
   textAreaContainer: { borderRadius: 14, borderWidth: 1.5, overflow: "hidden" },
+  textAreaHelper: {
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 4,
+    letterSpacing: 0.1,
+  },
   textArea: {
     fontSize: 15,
     fontFamily: "Inter_400Regular",
     lineHeight: 23,
-    padding: 16,
-    minHeight: 150,
-    maxHeight: 240,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    minHeight: 130,
+    maxHeight: 220,
   },
   charCountRow: { paddingHorizontal: 16, paddingBottom: 12, alignItems: "flex-end" },
-  charCount: { fontSize: 11, fontFamily: "Inter_500Medium", letterSpacing: 0.2 },
+  charCount: { fontSize: 11, fontFamily: "Inter_500Medium" },
   errorBox: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -531,16 +550,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   modalOptionText: { fontSize: 15, fontFamily: "Inter_500Medium" },
-  intensityOption: {
+  richOption: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 14,
+    paddingVertical: 13,
     paddingHorizontal: 14,
     borderRadius: 12,
     borderWidth: 1,
     gap: 12,
   },
-  optionEmoji: { fontSize: 20, width: 28, textAlign: "center" },
-  optionLabel: { fontSize: 15, fontFamily: "Inter_600SemiBold", marginBottom: 2 },
-  optionDesc: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 16 },
+  richEmoji: { fontSize: 20, width: 28, textAlign: "center" },
+  richLabel: { fontSize: 15, fontFamily: "Inter_600SemiBold", marginBottom: 2 },
+  richDesc: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 16 },
 });

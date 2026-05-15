@@ -4,16 +4,16 @@ import { Animated, StyleSheet, Text, View } from "react-native";
 import { LoadingDots } from "./LoadingDots";
 
 const MESSAGES = [
-  "Analyzing your bad decisions…",
-  "Finding the personality flaws…",
-  "Generating emotional damage…",
+  "Judging the damage…",
   "Searching for originality…",
-  "Consulting the council of judgment…",
-  "Measuring the gap between vision and reality…",
+  "Measuring cringe levels…",
+  "Calling the council of brutal honesty…",
   "Diagnosing the core issues…",
-  "Preparing the brutal truth…",
+  "Rebuilding something usable…",
   "Detecting generic thinking…",
-  "Assembling the verdict…",
+  "Finding what you already knew but ignored…",
+  "Preparing the verdict…",
+  "Assembling the brutal truth…",
 ];
 
 export function LoadingMessages() {
@@ -23,21 +23,11 @@ export function LoadingMessages() {
   useEffect(() => {
     const interval = setInterval(() => {
       Animated.sequence([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 250,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 350,
-          useNativeDriver: true,
-        }),
+        Animated.timing(fadeAnim, { toValue: 0, duration: 230, useNativeDriver: true }),
+        Animated.timing(fadeAnim, { toValue: 1, duration: 320, useNativeDriver: true }),
       ]).start();
-
       setIndex((prev) => (prev + 1) % MESSAGES.length);
     }, 2200);
-
     return () => clearInterval(interval);
   }, []);
 
@@ -52,15 +42,12 @@ export function LoadingMessages() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
+  container: { flexDirection: "row", alignItems: "center", gap: 10 },
   message: {
     color: "#fff",
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: "Inter_500Medium",
     letterSpacing: 0.1,
+    flexShrink: 1,
   },
 });

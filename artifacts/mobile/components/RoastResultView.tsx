@@ -528,15 +528,38 @@ export function RoastResultView({
     ? (INTENSITY_COLORS[meta.intensity] ?? colors.primary)
     : colors.primary;
 
+  const reportId = useRef(Date.now().toString(16).slice(-5).toUpperCase()).current;
+  const reportTimestamp = useRef(
+    new Date().toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    })
+  ).current;
+
   return (
     <View style={styles.container}>
+      {/* ── Report ID header ── */}
+      <Animated.View style={{ opacity: headerFade }}>
+        <View style={[styles.reportIdRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.reportIdLeft}>
+            <View style={[styles.reportDot, { backgroundColor: colors.primary }]} />
+            <Text style={[styles.reportIdLabel, { color: colors.mutedForeground }]}>
+              ROAST REPORT
+            </Text>
+            <Text style={[styles.reportId, { color: colors.primary }]}>#{reportId}</Text>
+          </View>
+          <Text style={[styles.reportTimestamp, { color: colors.mutedForeground }]}>
+            {reportTimestamp}
+          </Text>
+        </View>
+      </Animated.View>
+
       {/* ── Header ── */}
       <Animated.View style={{ opacity: headerFade }}>
         <View style={styles.headerRow}>
           <View style={styles.headerLeft}>
-            <Text style={[styles.resultLabel, { color: colors.mutedForeground }]}>
-              YOUR ROAST
-            </Text>
             {meta && (
               <View style={styles.metaRow}>
                 <View style={[styles.metaBadge, { backgroundColor: colors.primary + "18" }]}>
@@ -643,6 +666,21 @@ export function RoastResultView({
 
 const styles = StyleSheet.create({
   container: { gap: 12 },
+  reportIdRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 8,
+  },
+  reportIdLeft: { flexDirection: "row", alignItems: "center", gap: 7 },
+  reportDot: { width: 6, height: 6, borderRadius: 3 },
+  reportIdLabel: { fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 1.2 },
+  reportId: { fontSize: 11, fontFamily: "Inter_700Bold", letterSpacing: 0.5 },
+  reportTimestamp: { fontSize: 11, fontFamily: "Inter_400Regular" },
   headerRow: {
     flexDirection: "row",
     alignItems: "flex-start",
