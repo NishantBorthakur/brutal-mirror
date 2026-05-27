@@ -7,12 +7,6 @@ type = "image"
 title = "generated_image"
 
 [[outputs]]
-id = "5b9k2dr55c8VUawPazXJf"
-uri = "file://store-listing.md"
-type = "text"
-title = "Play Store Listing Copy"
-
-[[outputs]]
 id = "01IWlrLFkFpS1aYdRvJyM"
 uri = "file://artifacts/mobile/store-listing.md"
 type = "text"
