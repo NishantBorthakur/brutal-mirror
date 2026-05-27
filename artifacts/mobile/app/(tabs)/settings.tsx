@@ -6,6 +6,7 @@ import React, { useState } from "react";
 import {
   Alert,
   Image,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -296,6 +297,32 @@ export default function SettingsScreen() {
             </Text>
           </LinearGradient>
         </View>
+
+        <View style={[styles.group, { marginTop: 8, backgroundColor: colors.card, borderColor: colors.border }]}>
+          <TouchableOpacity
+            style={[styles.linkRow, { backgroundColor: colors.card }]}
+            onPress={() => Linking.openURL("https://orami.io/privacy")}
+            activeOpacity={0.7}
+          >
+            <View style={styles.linkLeft}>
+              <Feather name="shield" size={15} color={colors.mutedForeground} />
+              <Text style={[styles.linkLabel, { color: colors.foreground }]}>Privacy Policy</Text>
+            </View>
+            <Feather name="external-link" size={14} color={colors.mutedForeground} />
+          </TouchableOpacity>
+          <View style={[styles.separator, { backgroundColor: colors.border }]} />
+          <TouchableOpacity
+            style={[styles.linkRow, { backgroundColor: colors.card }]}
+            onPress={() => Linking.openURL("https://orami.io/terms")}
+            activeOpacity={0.7}
+          >
+            <View style={styles.linkLeft}>
+              <Feather name="file-text" size={15} color={colors.mutedForeground} />
+              <Text style={[styles.linkLabel, { color: colors.foreground }]}>Terms of Service</Text>
+            </View>
+            <Feather name="external-link" size={14} color={colors.mutedForeground} />
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   );
@@ -375,6 +402,15 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     lineHeight: 18,
   },
+  linkRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  linkLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
+  linkLabel: { fontSize: 14, fontFamily: "Inter_500Medium" },
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "flex-end" },
   sheet: {
     borderTopLeftRadius: 24,

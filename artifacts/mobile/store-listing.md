@@ -162,7 +162,8 @@ Initial release of Brutal Mirror.
 |---|---|
 | **Email** | *(your support email)* |
 | **Website** | https://brutal-ai-web.replit.app |
-| **Privacy Policy URL** | https://brutal-ai-web.replit.app/privacy |
+| **Privacy Policy URL** | https://orami.io/privacy |
+| **Terms of Service URL** | https://orami.io/terms |
 
 ---
 
