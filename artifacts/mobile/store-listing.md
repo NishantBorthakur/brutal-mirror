@@ -10,7 +10,7 @@ All copy ready to paste directly into Google Play Console.
 |---|---|
 | **App name** | Brutal Mirror |
 | **Developer name** | Brutal Mirror |
-| **Package name** | com.brutalmirror.app |
+| **Package name** | com.orami.brutalmirror |
 | **Category** | Productivity |
 | **Content rating** | Everyone (no objectionable content) |
 | **Target audience** | 18+ |
