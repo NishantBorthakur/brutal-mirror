@@ -33,7 +33,7 @@
       [
         "expo-router",
         {
-          "origin": "https://replit.com/"
+          "origin": "https://brutal-ai-web.replit.app/"
         }
       ],
       "expo-font",

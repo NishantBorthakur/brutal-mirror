@@ -16,6 +16,9 @@
       "pnpm": "10.26.1",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_DOMAIN": "brutal-ai-web.replit.app"
       }
     },
     "production": {
@@ -26,6 +29,9 @@
       },
       "ios": {
         "simulator": false
+      },
+      "env": {
+        "EXPO_PUBLIC_DOMAIN": "brutal-ai-web.replit.app"
       }
     }
   },
