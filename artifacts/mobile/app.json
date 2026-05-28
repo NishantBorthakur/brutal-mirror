@@ -37,8 +37,7 @@
         }
       ],
       "expo-font",
-      "expo-web-browser",
-      "react-native-keyboard-controller"
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
