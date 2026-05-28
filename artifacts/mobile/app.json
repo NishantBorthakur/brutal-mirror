@@ -19,7 +19,7 @@
     },
     "android": {
       "package": "com.orami.brutalmirror",
-      "versionCode": 3,
+      "versionCode": 4,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#0a0a0a"
@@ -37,7 +37,8 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      "react-native-keyboard-controller"
     ],
     "experiments": {
       "typedRoutes": true,
