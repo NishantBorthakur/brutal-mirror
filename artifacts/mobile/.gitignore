@@ -12,6 +12,7 @@ expo-env.d.ts
 # Native
 ios/
 android/
+keystore.properties
 *.orig.*
 *.jks
 *.p8
