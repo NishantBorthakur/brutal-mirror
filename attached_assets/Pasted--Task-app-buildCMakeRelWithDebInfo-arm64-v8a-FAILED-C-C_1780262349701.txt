@@ -1,0 +1,43 @@
+> Task :app:buildCMakeRelWithDebInfo[arm64-v8a] FAILED
+C/C++: ninja: error: unknown target 'react_codegen_reactnativekeyboardcontroller'
+
+[Incubating] Problems report is available at: file:///Users/nishantborthakur/Downloads/Repos/brutal-mirror/artifacts/mobile/android/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:buildCMakeRelWithDebInfo[arm64-v8a]'.
+> com.android.ide.common.process.ProcessException: ninja: Entering directory `/Users/nishantborthakur/Downloads/Repos/brutal-mirror/artifacts/mobile/android/app/.cxx/RelWithDebInfo/6rx1b5n6/arm64-v8a'
+  [0/2] Re-checking globbed directories...
+  [1/2] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: /Users/nishantborthakur/Downloads/Repos/brutal-mirror/artifacts/mobile/android/app/.cxx/RelWithDebInfo/6rx1b5n6/arm64-v8a
+  [0/2] Re-checking globbed directories...
+  
+  C++ build system [build] failed while executing:
+      /Users/nishantborthakur/Library/Android/sdk/cmake/3.22.1/bin/ninja \
+        -C \
+        /Users/nishantborthakur/Downloads/Repos/brutal-mirror/artifacts/mobile/android/app/.cxx/RelWithDebInfo/6rx1b5n6/arm64-v8a \
+        appmodules \
+        react_codegen_reactnativekeyboardcontroller \
+        react_codegen_rnscreens \
+        react_codegen_rnsvg \
+        react_codegen_safeareacontext
+    from /Users/nishantborthakur/Downloads/Repos/brutal-mirror/artifacts/mobile/android/app
+  ninja: error: unknown target 'react_codegen_reactnativekeyboardcontroller'
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 17s
+551 actionable tasks: 52 executed, 499 up-to-date
