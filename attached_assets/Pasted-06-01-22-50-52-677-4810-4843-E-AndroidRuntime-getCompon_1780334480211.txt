@@ -1,0 +1,100 @@
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: getComponent@1:958085
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: SceneView@1:919889
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: renderWithHooks@1:326245
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: updateFunctionComponent@1:345021
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: beginWork@1:352856
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: performUnitOfWork@1:373392
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: workLoopSync@1:372400
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: renderRootSync@1:372232
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: performWorkOnRoot@1:369658
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: performSyncWorkOnRoot@1:321946
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: flushSyncWorkAcrossRoots_impl@1:320853
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: scheduleUpdateOnFiber@1:369557
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: dispatchSetStateInternal@1:333544
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: dispatchSetState@1:333278
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: anonymous@1:1254864
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: anonymous@1:409185
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: _callTimer@1:408161
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: _callReactNativeMicrotasksPass@1:408305
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: callReactNativeMicrotasks@1:410257
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: __callReactNativeMicrotasks@1:130697
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: anonymous@1:129832
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: __guard@1:130571
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: flushedQueue@1:129743
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: 
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: 	at com.facebook.react.modules.core.ExceptionsManagerModule.reportException(ExceptionsManagerModule.kt:52)
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: 	at java.lang.reflect.Method.invoke(Native Method)
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: 	at com.facebook.react.bridge.JavaMethodWrapper.invoke(JavaMethodWrapper.kt:217)
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: 	at com.facebook.react.bridge.JavaModuleWrapper.invoke(JavaModuleWrapper.kt:134)
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: 	at com.facebook.jni.NativeRunnable.run(Native Method)
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: 	at android.os.Handler.handleCallback(Handler.java:942)
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: 	at android.os.Handler.dispatchMessage(Handler.java:99)
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: 	at com.facebook.react.bridge.queue.MessageQueueThreadHandler.dispatchMessage(MessageQueueThreadHandler.kt:21)
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: 	at android.os.Looper.loopOnce(Looper.java:201)
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: 	at android.os.Looper.loop(Looper.java:288)
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: 	at com.facebook.react.bridge.queue.MessageQueueThreadImpl$Companion.startNewBackgroundThread$lambda$1(MessageQueueThreadImpl.kt:175)
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: 	at com.facebook.react.bridge.queue.MessageQueueThreadImpl$Companion.$r8$lambda$ldnZnqelhYFctGaUKkOKYj5rxo4(Unknown Source:0)
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: 	at com.facebook.react.bridge.queue.MessageQueueThreadImpl$Companion$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)
+06-01 22:50:52.677  4810  4843 E AndroidRuntime: 	at java.lang.Thread.run(Thread.java:1012)
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: FATAL EXCEPTION: mqt_native_modules
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: Process: com.orami.brutalmirror, PID: 4860
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: com.facebook.react.common.JavascriptException: Error: Cannot find native module 'ExpoClipboard', stack:
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: requireNativeModule@1:788570
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: anonymous@1:1218198
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: loadModuleImplementation@1:49591
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: guardedLoadModule@1:49114
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: metroRequire@1:48624
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: anonymous@1:1215593
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: loadModuleImplementation@1:49591
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: guardedLoadModule@1:49114
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: metroRequire@1:48624
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: anonymous@1:1202762
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: loadModuleImplementation@1:49591
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: guardedLoadModule@1:49114
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: metroRequire@1:48624
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: anonymous@1:1170790
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: loadModuleImplementation@1:49591
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: guardedLoadModule@1:49070
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: metroRequire@1:48624
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: get@1:808369
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: metroContext@1:808317
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: loadRoute@1:1128028
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: getQualifiedRouteComponent@1:957078
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: getComponent@1:958085
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: SceneView@1:919889
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: renderWithHooks@1:326245
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: updateFunctionComponent@1:345021
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: beginWork@1:352856
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: performUnitOfWork@1:373392
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: workLoopSync@1:372400
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: renderRootSync@1:372232
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: performWorkOnRoot@1:369658
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: performSyncWorkOnRoot@1:321946
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: flushSyncWorkAcrossRoots_impl@1:320853
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: scheduleUpdateOnFiber@1:369557
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: dispatchSetStateInternal@1:333544
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: dispatchSetState@1:333278
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: anonymous@1:1254864
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: anonymous@1:409185
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: _callTimer@1:408161
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: _callReactNativeMicrotasksPass@1:408305
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: callReactNativeMicrotasks@1:410257
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: __callReactNativeMicrotasks@1:130697
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: anonymous@1:129832
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: __guard@1:130571
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: flushedQueue@1:129743
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: 
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: 	at com.facebook.react.modules.core.ExceptionsManagerModule.reportException(ExceptionsManagerModule.kt:52)
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: 	at java.lang.reflect.Method.invoke(Native Method)
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: 	at com.facebook.react.bridge.JavaMethodWrapper.invoke(JavaMethodWrapper.kt:217)
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: 	at com.facebook.react.bridge.JavaModuleWrapper.invoke(JavaModuleWrapper.kt:134)
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: 	at com.facebook.jni.NativeRunnable.run(Native Method)
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: 	at android.os.Handler.handleCallback(Handler.java:942)
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: 	at android.os.Handler.dispatchMessage(Handler.java:99)
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: 	at com.facebook.react.bridge.queue.MessageQueueThreadHandler.dispatchMessage(MessageQueueThreadHandler.kt:21)
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: 	at android.os.Looper.loopOnce(Looper.java:201)
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: 	at android.os.Looper.loop(Looper.java:288)
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: 	at com.facebook.react.bridge.queue.MessageQueueThreadImpl$Companion.startNewBackgroundThread$lambda$1(MessageQueueThreadImpl.kt:175)
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: 	at com.facebook.react.bridge.queue.MessageQueueThreadImpl$Companion.$r8$lambda$ldnZnqelhYFctGaUKkOKYj5rxo4(Unknown Source:0)
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: 	at com.facebook.react.bridge.queue.MessageQueueThreadImpl$Companion$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)
+06-01 22:50:54.635  4860  4889 E AndroidRuntime: 	at java.lang.Thread.run(Thread.java:1012)
