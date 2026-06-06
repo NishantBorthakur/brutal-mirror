@@ -1,0 +1,609 @@
+Act as a strict senior QA engineer and product tester for the Brutal Mirror app.
+
+Your job is to fully test the app, identify all issues, and then fix them carefully without breaking existing functionality.
+
+Brutal Mirror should feel like a professional, premium mobile-first AI app, not a rough prototype.
+
+==================================================
+PRIMARY OBJECTIVE
+==================================================
+
+Test the full Brutal Mirror experience end-to-end:
+
+- App loading
+- Mobile responsiveness
+- Navigation
+- Onboarding
+- Roast generation
+- AI output structure
+- Result tabs
+- Score report
+- Before vs After
+- Share card
+- Copy buttons
+- Save to history
+- Roast Vault/history
+- Settings
+- New Roast flow
+- Regeneration buttons
+- Error states
+- Empty states
+- Loading states
+- LocalStorage behavior
+- API/backend stability
+
+After testing, fix all bugs, UX issues, layout problems, broken flows, console errors, and experience glitches.
+
+Do not add major new features.
+Do not add authentication.
+Do not add payments.
+Do not add database.
+Do not add screenshot analysis.
+Focus only on making the existing app stable, polished, and professional.
+
+==================================================
+GENERAL APP HEALTH CHECK
+==================================================
+
+Check and fix:
+
+1. App loads without crashing.
+2. No console errors on startup.
+3. No broken imports.
+4. No undefined/null rendering errors.
+5. No blank screens.
+6. No horizontal scrolling on mobile.
+7. Header does not overlap content.
+8. Bottom navigation does not cover buttons or text.
+9. All buttons have proper spacing and tap targets.
+10. All long AI text wraps properly.
+11. App works when localStorage is empty.
+12. App works when old saved history items are missing newer fields.
+13. API errors are handled cleanly.
+14. Loading state does not get stuck.
+15. UI remains stable after multiple generations.
+16. App does not duplicate results unexpectedly.
+17. New Roast flow clears the input and resets result properly.
+18. History restore works correctly.
+19. Settings preferences persist correctly.
+
+==================================================
+MOBILE RESPONSIVENESS TEST
+==================================================
+
+Test these viewport sizes:
+
+- 375 x 667
+- 390 x 844
+- 414 x 896
+- 430 x 932
+- 768 x 1024
+- Desktop width
+
+Fix any issue where:
+- Content is cut off
+- Buttons overflow
+- Tabs become unusable
+- Cards are too cramped
+- Bottom nav covers content
+- Share card exceeds screen width
+- Result actions overflow horizontally
+- Text becomes too small
+- Form controls feel awkward
+- User needs horizontal scrolling
+
+The app must feel excellent on mobile.
+
+==================================================
+ONBOARDING TEST
+==================================================
+
+Test first-time onboarding.
+
+Steps:
+1. Clear localStorage.
+2. Open the app.
+3. Confirm onboarding/welcome card appears.
+4. Click “Start Roasting”.
+5. Confirm onboarding disappears.
+6. Refresh app.
+7. Confirm onboarding does not appear again.
+8. Go to Settings.
+9. Click Reset Onboarding.
+10. Refresh app.
+11. Confirm onboarding appears again.
+
+Expected:
+- Onboarding works smoothly.
+- No layout issues.
+- State persists correctly in localStorage.
+- Buttons do not overlap or overflow.
+
+Fix any issues found.
+
+==================================================
+NAVIGATION TEST
+==================================================
+
+Test all app sections:
+
+- Roast
+- History / Roast Vault
+- Settings
+
+Expected:
+- Bottom navigation works on mobile.
+- Active state is visually clear.
+- Each section shows correct content.
+- No section appears blank.
+- User can move between sections without losing app stability.
+- Result state should remain available unless intentionally reset.
+- Navigation should not break the form or result display.
+
+Fix any issues found.
+
+==================================================
+GENERATOR FORM TEST
+==================================================
+
+Test the main roast generator.
+
+Check:
+- Category dropdown works.
+- Intensity dropdown works.
+- Roast Personality dropdown works.
+- Textarea works.
+- Character counter updates.
+- Minimum 20 character validation works.
+- 3000 character max works.
+- Example chips fill correct category and sample text.
+- Generate/Roast button disables during loading.
+- Generate button is visually dominant.
+- Input focus glow and UI states work.
+- Error messages are clean and readable.
+
+Fix any issues found.
+
+==================================================
+TEST CASE 1 — STARTUP IDEA
+==================================================
+
+Category:
+Startup Idea
+
+Intensity:
+Brutal
+
+Roast Personality:
+Startup Investor
+
+Input:
+I want to build an AI productivity app that helps users manage tasks, track habits, get motivational quotes, organize their calendar, write goals, and become the best version of themselves.
+
+Expected output:
+- Viral one-liner appears.
+- Score report appears.
+- Originality score should be low.
+- Cringe level should be medium or high.
+- Roast criticizes generic productivity positioning.
+- Diagnosis mentions lack of differentiation.
+- Fixes suggest a specific user segment or sharper use case.
+- Improved version is more niche and marketable.
+- Result tabs work.
+- Share card displays the viral one-liner.
+
+Fix if:
+- Any expected section is missing.
+- JSON parsing fails.
+- Output appears in wrong sections.
+- Result layout breaks.
+- Score bars break.
+- Text overflows.
+
+==================================================
+TEST CASE 2 — INSTAGRAM BIO
+==================================================
+
+Category:
+Instagram Bio
+
+Intensity:
+Harsh
+
+Roast Personality:
+Creative Director
+
+Input:
+Entrepreneur | Creator | Dreamer
+Helping people unlock their potential
+Good vibes only
+DM for collabs
+
+Expected output:
+- Criticizes generic personal-brand language.
+- Score report shows poor originality and clarity.
+- Fixes suggest a more specific audience and value proposition.
+- Before vs After shows a stronger rewritten bio.
+- Share card displays a strong viral one-liner.
+- Copy Quote works.
+
+Fix any issue found.
+
+==================================================
+TEST CASE 3 — DATING PROFILE
+==================================================
+
+Category:
+Dating Profile
+
+Intensity:
+Brutal
+
+Roast Personality:
+Dating Coach
+
+Input:
+I like food, travel, music, movies, and having fun. Looking for someone genuine who doesn’t take life too seriously. Let’s see where things go.
+
+Expected output:
+- Calls out profile as boring and generic.
+- Diagnosis mentions lack of personality, specificity, and emotional hook.
+- Fixes suggest concrete details and stronger self-presentation.
+- Improved version sounds confident and specific.
+- Output stays funny but not abusive or unsafe.
+
+Fix any issue found.
+
+==================================================
+TEST CASE 4 — RESUME SUMMARY
+==================================================
+
+Category:
+Resume Summary
+
+Intensity:
+Harsh
+
+Roast Personality:
+Resume Recruiter
+
+Input:
+Hardworking and motivated professional with experience in sales, management, operations, technology, and communication. Passionate about solving problems and helping companies grow.
+
+Expected output:
+- Criticizes vague resume clichés.
+- Score report shows low clarity and low marketability.
+- Diagnosis mentions lack of metrics, role focus, and proof.
+- Fixes request measurable results and specific skills.
+- Improved version sounds like a stronger professional summary.
+
+Fix any issue found.
+
+==================================================
+TEST CASE 5 — MOBILE APP IDEA
+==================================================
+
+Category:
+Mobile App Idea
+
+Intensity:
+Brutal
+
+Roast Personality:
+Internet Troll, but useful
+
+Input:
+I want to create a social media app where people can post pictures, follow friends, chat, share stories, discover content, and build communities around their interests.
+
+Expected output:
+- Points out the idea is recycled Instagram/Snapchat/Reddit.
+- Viral one-liner is funny and screenshot-worthy.
+- Score report shows very low originality.
+- Fixes force a niche, unique mechanic, or underserved audience.
+- Improved version is much more specific.
+- Output remains safe and constructive.
+
+Fix any issue found.
+
+==================================================
+RESULT VIEW TEST
+==================================================
+
+After each roast, check:
+
+1. Result scrolls into view.
+2. Report header shows:
+   - category
+   - intensity
+   - personality
+   - timestamp
+   - report ID, if implemented
+
+3. Result tabs work:
+   - Report
+   - Roast
+   - Fixes
+   - Rewrite
+   - Share
+
+4. Viral one-liner is visually prominent.
+5. Score bars render correctly.
+6. Before vs After is readable.
+7. Improved Version is visible.
+8. Share card looks premium.
+9. No cards overflow.
+10. Result actions do not overflow.
+
+Fix all result layout issues.
+
+==================================================
+COPY / SHARE TEST
+==================================================
+
+After generating a roast, test:
+
+- Copy Result
+- Copy Quote
+- Download PNG, if implemented
+
+Expected:
+- Copy Result copies a clean, readable full report.
+- Copy Quote copies only the viral one-liner.
+- Download PNG creates a usable image file if implemented.
+- Buttons show success toast or confirmation.
+- No console errors occur.
+
+If Download PNG is unstable, either fix it properly or hide the button until stable.
+
+==================================================
+SAVE / HISTORY / ROAST VAULT TEST
+==================================================
+
+Steps:
+1. Generate a roast.
+2. Save it to history.
+3. Go to History / Roast Vault.
+4. Open the saved roast.
+5. Delete the saved roast.
+6. Clear all history.
+
+Expected:
+- Saved item shows viral one-liner preview.
+- Saved item shows category.
+- Saved item shows intensity.
+- Saved item shows personality.
+- Saved item shows date/time.
+- Saved item shows original prompt preview.
+- Saved item shows score summary if available.
+- Opening item restores the full result.
+- Original prompt is visible somewhere in the restored result.
+- Delete works.
+- Clear history works.
+- Empty state appears after clearing.
+- Old saved roasts without newer fields do not crash the app.
+
+Fix any issues found.
+
+==================================================
+SETTINGS TEST
+==================================================
+
+Test Settings screen.
+
+Expected sections:
+
+A. Defaults
+- Default category
+- Default intensity
+- Default roast personality
+
+B. Data
+- Clear all saved roasts
+- Reset onboarding
+
+C. About
+- Brutal Mirror
+- Brutal feedback. Better results.
+- Version MVP 1.0
+- AI feedback disclaimer
+
+Test:
+1. Change default category.
+2. Change default intensity.
+3. Change default personality.
+4. Refresh app.
+5. Confirm defaults persist.
+6. Reset onboarding.
+7. Clear all saved roasts.
+
+Fix if:
+- Settings do not persist.
+- Settings break generator form.
+- Clear history does not work.
+- Reset onboarding does not work.
+
+==================================================
+REGENERATION BUTTON TEST
+==================================================
+
+Generate a roast using:
+
+Category:
+Startup Idea
+
+Intensity:
+Harsh
+
+Roast Personality:
+Startup Investor
+
+Input:
+I want to build a platform where small businesses can use AI to automate marketing, sales, customer support, invoicing, analytics, and team collaboration from one dashboard.
+
+Then test:
+- Make it sharper
+- Make it funnier
+- Make it more professional
+
+Expected:
+- Each button calls backend again.
+- Same original input is reused.
+- Output tone changes based on refinement.
+- Loading state appears.
+- Result updates cleanly.
+- No duplicate/corrupted state.
+- History does not break.
+- Buttons do not overflow.
+
+Fix any issues found.
+
+==================================================
+VALIDATION TESTS
+==================================================
+
+Test short input:
+Bad idea
+
+Expected:
+- Validation error appears.
+- Backend is not called.
+- No roast is generated.
+- Usage count does not increase if usage limit exists.
+- UI does not crash.
+
+Test empty input:
+[leave textarea empty]
+
+Expected:
+- Clean validation error appears.
+- Backend is not called.
+- No roast is generated.
+- No console errors.
+
+Test long input:
+Paste around 2500–3000 characters.
+
+Expected:
+- Character counter works.
+- Layout does not break.
+- App does not freeze.
+- Generate works if under limit.
+- Result text wraps properly.
+
+Fix any validation issues.
+
+==================================================
+API / BACKEND TEST
+==================================================
+
+Check backend behavior.
+
+Verify:
+- /api/health works.
+- /api/roast works.
+- Missing API key returns clean error.
+- Invalid input returns clean error.
+- AI response is parsed safely.
+- If AI returns malformed JSON, frontend receives a useful error.
+- Backend never exposes API key.
+- Request body includes:
+  - category
+  - intensity
+  - roast personality
+  - content
+  - refinementMode if used
+
+Fix backend issues carefully.
+
+==================================================
+ERROR STATE TEST
+==================================================
+
+Simulate:
+- API failure
+- Missing OpenAI API key
+- Invalid response from AI
+- Network failure if possible
+
+Expected:
+- User sees clean error message.
+- Loading state stops.
+- Generate button becomes usable again.
+- App does not crash.
+- Usage count does not increase on failure.
+
+Fix all error-handling issues.
+
+==================================================
+LOCALSTORAGE COMPATIBILITY TEST
+==================================================
+
+Manually test app with:
+
+1. Empty localStorage.
+2. Old history items missing:
+   - viralOneLiner
+   - scoreReport
+   - personality
+   - originalPrompt
+
+3. Corrupted history JSON if easy to simulate.
+
+Expected:
+- App does not crash.
+- Broken/old items are skipped or rendered safely.
+- User can clear history.
+- Defaults still load correctly.
+
+Fix all compatibility issues.
+
+==================================================
+FINAL POLISH CHECK
+==================================================
+
+After fixing bugs, polish:
+
+- Spacing consistency
+- Card hierarchy
+- Button alignment
+- Mobile tap targets
+- Toast messages
+- Empty states
+- Loading messages
+- Error messages
+- Header and bottom nav spacing
+- Result readability
+- Share card visual quality
+
+The app should feel professional enough for app listing screenshots.
+
+==================================================
+FINAL OUTPUT REQUIRED
+==================================================
+
+After testing and fixing, provide a final QA report with:
+
+1. Summary
+- Overall status
+- Is the app demo-ready?
+- Is the app app-store-polish-ready?
+
+2. Bugs fixed
+For each:
+- Issue
+- Severity
+- Fix applied
+
+3. Remaining issues, if any
+For each:
+- Issue
+- Severity
+- Recommended next step
+
+4. UX improvements made
+
+5. Final recommendation
+State clearly whether Brutal Mirror is ready for:
+- internal testing
+- closed testing
+- public launch

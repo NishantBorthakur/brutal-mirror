@@ -391,13 +391,13 @@ const styles = StyleSheet.create({
   },
   aboutDivider: { height: StyleSheet.hairlineWidth },
   aboutVersion: {
-    color: "#6d28d9",
+    color: "#c4b5fd",
     fontSize: 12,
     fontFamily: "Inter_500Medium",
     letterSpacing: 0.3,
   },
   aboutDisclaimer: {
-    color: "#6d28d9",
+    color: "#9ca3af",
     fontSize: 12,
     fontFamily: "Inter_400Regular",
     lineHeight: 18,

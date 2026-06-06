@@ -171,21 +171,33 @@ export function RoastProvider({ children }: { children: React.ReactNode }) {
         setCurrentResult(result);
         setCurrentMeta({ category, intensity, content, personality });
 
-        const newItem: RoastHistoryItem = {
-          id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
-          category,
-          intensity,
-          personality,
-          contentPreview: content.slice(0, 80) + (content.length > 80 ? "…" : ""),
-          originalPrompt: content,
-          result,
-          createdAt: new Date().toISOString(),
-        };
+        if (refinementMode) {
+          if (historyRef.current.length > 0) {
+            const updated = [
+              { ...historyRef.current[0], result },
+              ...historyRef.current.slice(1),
+            ];
+            historyRef.current = updated;
+            setHistory(updated);
+            await saveHistory(updated);
+          }
+        } else {
+          const newItem: RoastHistoryItem = {
+            id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
+            category,
+            intensity,
+            personality,
+            contentPreview: content.slice(0, 80) + (content.length > 80 ? "…" : ""),
+            originalPrompt: content,
+            result,
+            createdAt: new Date().toISOString(),
+          };
 
-        const newHistory = [newItem, ...historyRef.current].slice(0, MAX_HISTORY);
-        historyRef.current = newHistory;
-        setHistory(newHistory);
-        await saveHistory(newHistory);
+          const newHistory = [newItem, ...historyRef.current].slice(0, MAX_HISTORY);
+          historyRef.current = newHistory;
+          setHistory(newHistory);
+          await saveHistory(newHistory);
+        }
       } catch (err) {
         const msg =
           err instanceof Error ? err.message : "Something went wrong. Try again.";

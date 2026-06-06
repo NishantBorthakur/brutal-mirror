@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   brandMeta: {
-    color: "#6d28d9",
+    color: "#8b7cf8",
     fontSize: 10,
     fontFamily: "Inter_500Medium",
     letterSpacing: 0.5,
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   footerTagline: {
-    color: "#4c1d95",
+    color: "#7c6aed",
     fontSize: 11,
     fontFamily: "Inter_500Medium",
     letterSpacing: 0.5,
