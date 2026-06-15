@@ -17,3 +17,9 @@ id = "7wWBJx_dOPCdO3-Qg1kGE"
 uri = "file://billing-analysis.md"
 type = "text"
 title = "Brutal Mirror — AI Token & Billing Analysis"
+
+[[outputs]]
+id = "Gncw8eXP_OrpmY8gJ0Fcw"
+uri = "file://IMPLEMENTATION_STATUS.md"
+type = "text"
+title = "Brutal Mirror — Implementation Status"
