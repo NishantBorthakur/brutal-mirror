@@ -156,3 +156,79 @@ export const LogoutMobileSessionHeader = zod.object({
 export const LogoutMobileSessionResponse = zod.object({
   success: zod.boolean(),
 });
+
+/**
+ * @summary Get authenticated user account and credit balance
+ */
+export const GetAccountMeHeader = zod.object({
+  Authorization: zod
+    .string()
+    .optional()
+    .describe("Opaque session token — `Bearer <sid>`."),
+});
+
+export const GetAccountMeResponse = zod.object({
+  user: zod.object({
+    id: zod.string(),
+    email: zod.string().email().nullable(),
+    firstName: zod.string().nullable(),
+    lastName: zod.string().nullable(),
+    profileImageUrl: zod.string().nullable(),
+  }),
+  creditsBalance: zod.number(),
+});
+
+/**
+ * @summary Create a Razorpay order for a credit pack
+ */
+export const CreateBillingOrderBody = zod.object({
+  packId: zod.enum(["starter", "value", "power"]),
+});
+
+export const CreateBillingOrderResponse = zod.object({
+  orderId: zod.string(),
+  amount: zod.number().describe("Amount in paise"),
+  currency: zod.string(),
+  keyId: zod.string(),
+  packId: zod.string(),
+  credits: zod.number(),
+  packLabel: zod.string(),
+});
+
+/**
+ * @summary Verify a Razorpay payment and credit the user
+ */
+export const VerifyBillingPaymentBody = zod.object({
+  razorpay_order_id: zod.string(),
+  razorpay_payment_id: zod.string(),
+  razorpay_signature: zod.string(),
+});
+
+export const VerifyBillingPaymentResponse = zod.object({
+  success: zod.boolean(),
+  creditsBalance: zod.number(),
+  alreadyVerified: zod.boolean().optional(),
+});
+
+/**
+ * @summary Get the authenticated user's credit transaction history
+ */
+export const GetBillingTransactionsHeader = zod.object({
+  Authorization: zod
+    .string()
+    .optional()
+    .describe("Opaque session token — `Bearer <sid>`."),
+});
+
+export const GetBillingTransactionsResponse = zod.object({
+  transactions: zod.array(
+    zod.object({
+      id: zod.string(),
+      type: zod.string(),
+      credits: zod.number(),
+      balanceAfter: zod.number().optional(),
+      reason: zod.string(),
+      createdAt: zod.coerce.date(),
+    }),
+  ),
+});

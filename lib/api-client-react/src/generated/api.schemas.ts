@@ -92,6 +92,60 @@ export const LogoutSuccessValue = {
 } as const;
 export type LogoutSuccess = typeof LogoutSuccessValue;
 
+export interface AccountMeResponse {
+  user: AuthUser;
+  creditsBalance: number;
+}
+
+export type CreateOrderRequestPackId =
+  (typeof CreateOrderRequestPackId)[keyof typeof CreateOrderRequestPackId];
+
+export const CreateOrderRequestPackId = {
+  starter: "starter",
+  value: "value",
+  power: "power",
+} as const;
+
+export interface CreateOrderRequest {
+  packId: CreateOrderRequestPackId;
+}
+
+export interface CreateOrderResponse {
+  orderId: string;
+  /** Amount in paise */
+  amount: number;
+  currency: string;
+  keyId: string;
+  packId: string;
+  credits: number;
+  packLabel: string;
+}
+
+export interface VerifyPaymentRequest {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
+export interface VerifyPaymentResponse {
+  success: boolean;
+  creditsBalance: number;
+  alreadyVerified?: boolean;
+}
+
+export interface TransactionItem {
+  id: string;
+  type: string;
+  credits: number;
+  balanceAfter?: number;
+  reason: string;
+  createdAt: string;
+}
+
+export interface TransactionsResponse {
+  transactions: TransactionItem[];
+}
+
 export interface ErrorEnvelope {
   error: string;
   message?: string;

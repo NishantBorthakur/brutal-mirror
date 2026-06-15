@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AuthModal } from "@/components/AuthModal";
+import { BillingModal } from "@/components/BillingModal";
 import { ONBOARDING_KEY, OnboardingCard } from "@/components/OnboardingCard";
 import { OutOfCreditsModal } from "@/components/OutOfCreditsModal";
 import { type RoastFormHandle, RoastForm } from "@/components/RoastForm";
@@ -38,6 +39,7 @@ export default function HomeScreen() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false);
+  const [showBillingModal, setShowBillingModal] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem(ONBOARDING_KEY)
@@ -86,6 +88,7 @@ export default function HomeScreen() {
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <AuthModal visible={showAuthModal} onClose={() => setShowAuthModal(false)} />
       <OutOfCreditsModal visible={showOutOfCreditsModal} onClose={() => setShowOutOfCreditsModal(false)} />
+      <BillingModal visible={showBillingModal} onClose={() => setShowBillingModal(false)} />
 
       {/* ── Header ── */}
       <View
@@ -130,6 +133,26 @@ export default function HomeScreen() {
           )
         )}
       </View>
+
+      {/* ── Low-credit banner ── */}
+      {!authLoading && isAuthenticated && credits <= 2 && (
+        <TouchableOpacity
+          style={[styles.lowCreditBanner, { backgroundColor: credits === 0 ? "#ef444410" : "#f59e0b10", borderColor: credits === 0 ? "#ef444425" : "#f59e0b25" }]}
+          onPress={() => credits === 0 ? setShowOutOfCreditsModal(true) : setShowBillingModal(true)}
+          activeOpacity={0.8}
+        >
+          <Feather name="alert-circle" size={12} color={credits === 0 ? "#ef4444" : "#f59e0b"} />
+          <Text style={[styles.lowCreditText, { color: credits === 0 ? "#ef4444" : "#f59e0b" }]}>
+            {credits === 0
+              ? "Out of credits — "
+              : `${credits} credit${credits === 1 ? "" : "s"} left — `}
+            <Text style={{ fontFamily: "Inter_600SemiBold" }}>
+              {credits === 0 ? "Top up now" : "Buy more"}
+            </Text>
+          </Text>
+          <Feather name="chevron-right" size={12} color={credits === 0 ? "#ef4444" : "#f59e0b"} />
+        </TouchableOpacity>
+      )}
 
       {/* ── Scroll body ── */}
       <ScrollView
@@ -262,6 +285,15 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   signInText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  lowCreditBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  lowCreditText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular" },
   scroll: { paddingHorizontal: 20, paddingTop: 24, gap: 20 },
   hero: {
     position: "relative",

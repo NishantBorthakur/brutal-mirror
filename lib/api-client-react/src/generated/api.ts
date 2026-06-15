@@ -17,8 +17,11 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  AccountMeResponse,
   AuthUserEnvelope,
   BeginBrowserLoginParams,
+  CreateOrderRequest,
+  CreateOrderResponse,
   ErrorEnvelope,
   HandleBrowserLoginCallbackParams,
   HealthStatus,
@@ -27,7 +30,10 @@ import type {
   MobileTokenExchangeSuccess,
   RoastRequest,
   RoastResult,
+  TransactionsResponse,
   UserProfile,
+  VerifyPaymentRequest,
+  VerifyPaymentResponse,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -799,3 +805,326 @@ export const useLogoutMobileSession = <
 > => {
   return useMutation(getLogoutMobileSessionMutationOptions(options));
 };
+
+/**
+ * @summary Get authenticated user account and credit balance
+ */
+export const getGetAccountMeUrl = () => {
+  return `/api/account/me`;
+};
+
+export const getAccountMe = async (
+  options?: RequestInit,
+): Promise<AccountMeResponse> => {
+  return customFetch<AccountMeResponse>(getGetAccountMeUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetAccountMeQueryKey = () => {
+  return [`/api/account/me`] as const;
+};
+
+export const getGetAccountMeQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAccountMe>>,
+  TError = ErrorType<ErrorEnvelope>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAccountMe>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetAccountMeQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getAccountMe>>> = ({
+    signal,
+  }) => getAccountMe({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAccountMe>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAccountMeQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAccountMe>>
+>;
+export type GetAccountMeQueryError = ErrorType<ErrorEnvelope>;
+
+/**
+ * @summary Get authenticated user account and credit balance
+ */
+
+export function useGetAccountMe<
+  TData = Awaited<ReturnType<typeof getAccountMe>>,
+  TError = ErrorType<ErrorEnvelope>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAccountMe>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAccountMeQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a Razorpay order for a credit pack
+ */
+export const getCreateBillingOrderUrl = () => {
+  return `/api/billing/create-order`;
+};
+
+export const createBillingOrder = async (
+  createOrderRequest: CreateOrderRequest,
+  options?: RequestInit,
+): Promise<CreateOrderResponse> => {
+  return customFetch<CreateOrderResponse>(getCreateBillingOrderUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createOrderRequest),
+  });
+};
+
+export const getCreateBillingOrderMutationOptions = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createBillingOrder>>,
+    TError,
+    { data: BodyType<CreateOrderRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createBillingOrder>>,
+  TError,
+  { data: BodyType<CreateOrderRequest> },
+  TContext
+> => {
+  const mutationKey = ["createBillingOrder"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createBillingOrder>>,
+    { data: BodyType<CreateOrderRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createBillingOrder(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateBillingOrderMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createBillingOrder>>
+>;
+export type CreateBillingOrderMutationBody = BodyType<CreateOrderRequest>;
+export type CreateBillingOrderMutationError = ErrorType<ErrorEnvelope>;
+
+/**
+ * @summary Create a Razorpay order for a credit pack
+ */
+export const useCreateBillingOrder = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createBillingOrder>>,
+    TError,
+    { data: BodyType<CreateOrderRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createBillingOrder>>,
+  TError,
+  { data: BodyType<CreateOrderRequest> },
+  TContext
+> => {
+  return useMutation(getCreateBillingOrderMutationOptions(options));
+};
+
+/**
+ * @summary Verify a Razorpay payment and credit the user
+ */
+export const getVerifyBillingPaymentUrl = () => {
+  return `/api/billing/verify-payment`;
+};
+
+export const verifyBillingPayment = async (
+  verifyPaymentRequest: VerifyPaymentRequest,
+  options?: RequestInit,
+): Promise<VerifyPaymentResponse> => {
+  return customFetch<VerifyPaymentResponse>(getVerifyBillingPaymentUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(verifyPaymentRequest),
+  });
+};
+
+export const getVerifyBillingPaymentMutationOptions = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof verifyBillingPayment>>,
+    TError,
+    { data: BodyType<VerifyPaymentRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof verifyBillingPayment>>,
+  TError,
+  { data: BodyType<VerifyPaymentRequest> },
+  TContext
+> => {
+  const mutationKey = ["verifyBillingPayment"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof verifyBillingPayment>>,
+    { data: BodyType<VerifyPaymentRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return verifyBillingPayment(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type VerifyBillingPaymentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof verifyBillingPayment>>
+>;
+export type VerifyBillingPaymentMutationBody = BodyType<VerifyPaymentRequest>;
+export type VerifyBillingPaymentMutationError = ErrorType<ErrorEnvelope>;
+
+/**
+ * @summary Verify a Razorpay payment and credit the user
+ */
+export const useVerifyBillingPayment = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof verifyBillingPayment>>,
+    TError,
+    { data: BodyType<VerifyPaymentRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof verifyBillingPayment>>,
+  TError,
+  { data: BodyType<VerifyPaymentRequest> },
+  TContext
+> => {
+  return useMutation(getVerifyBillingPaymentMutationOptions(options));
+};
+
+/**
+ * @summary Get the authenticated user's credit transaction history
+ */
+export const getGetBillingTransactionsUrl = () => {
+  return `/api/billing/transactions`;
+};
+
+export const getBillingTransactions = async (
+  options?: RequestInit,
+): Promise<TransactionsResponse> => {
+  return customFetch<TransactionsResponse>(getGetBillingTransactionsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetBillingTransactionsQueryKey = () => {
+  return [`/api/billing/transactions`] as const;
+};
+
+export const getGetBillingTransactionsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getBillingTransactions>>,
+  TError = ErrorType<ErrorEnvelope>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getBillingTransactions>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetBillingTransactionsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getBillingTransactions>>
+  > = ({ signal }) => getBillingTransactions({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getBillingTransactions>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetBillingTransactionsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getBillingTransactions>>
+>;
+export type GetBillingTransactionsQueryError = ErrorType<ErrorEnvelope>;
+
+/**
+ * @summary Get the authenticated user's credit transaction history
+ */
+
+export function useGetBillingTransactions<
+  TData = Awaited<ReturnType<typeof getBillingTransactions>>,
+  TError = ErrorType<ErrorEnvelope>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getBillingTransactions>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetBillingTransactionsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}

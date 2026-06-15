@@ -31,6 +31,7 @@ interface AuthContextValue {
   login: () => Promise<void>;
   logout: () => Promise<void>;
   updateCreditsBalance: (n: number) => void;
+  refreshCredits: () => Promise<void>;
   getToken: () => Promise<string | null>;
 }
 
@@ -42,6 +43,7 @@ const AuthContext = createContext<AuthContextValue>({
   login: async () => {},
   logout: async () => {},
   updateCreditsBalance: () => {},
+  refreshCredits: async () => {},
   getToken: async () => null,
 });
 
@@ -191,6 +193,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCredits(n);
   }, []);
 
+  const refreshCredits = useCallback(async () => {
+    try {
+      const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+      if (token) await fetchCredits(token);
+    } catch {}
+  }, [fetchCredits]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -201,6 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         updateCreditsBalance,
+        refreshCredits,
         getToken,
       }}
     >

@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import React from "react";
+import React, { useState } from "react";
 import {
   Modal,
   Platform,
@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 
+import { BillingModal } from "@/components/BillingModal";
 import { useColors } from "@/hooks/useColors";
 
 interface Props {
@@ -18,82 +19,73 @@ interface Props {
   onClose: () => void;
 }
 
-const CREDIT_PACKS = [
-  { label: "20 credits", price: "Coming Soon", tokens: "~20 roasts" },
-  { label: "50 credits", price: "Coming Soon", tokens: "~50 roasts" },
-  { label: "120 credits", price: "Coming Soon", tokens: "~120 roasts" },
-];
-
 export function OutOfCreditsModal({ visible, onClose }: Props) {
   const colors = useColors();
+  const [showBilling, setShowBilling] = useState(false);
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      statusBarTranslucent
-      onRequestClose={onClose}
-    >
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable
-          style={[styles.sheet, { backgroundColor: colors.card, borderColor: colors.border }]}
-          onPress={() => {}}
-        >
-          <View style={[styles.handle, { backgroundColor: colors.border }]} />
+    <>
+      <BillingModal
+        visible={showBilling}
+        onClose={() => setShowBilling(false)}
+        onSuccess={() => {
+          setShowBilling(false);
+          onClose();
+        }}
+      />
 
-          {/* ── Header ── */}
-          <LinearGradient
-            colors={["#1a0533", "#2d0a5e"]}
-            style={styles.heroCard}
+      <Modal
+        visible={visible}
+        transparent
+        animationType="slide"
+        statusBarTranslucent
+        onRequestClose={onClose}
+      >
+        <Pressable style={styles.overlay} onPress={onClose}>
+          <Pressable
+            style={[styles.sheet, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => {}}
           >
-            <View style={[styles.iconCircle, { backgroundColor: "#8b5cf620", borderColor: "#8b5cf630" }]}>
-              <Feather name="zap-off" size={26} color="#8b5cf6" />
-            </View>
-            <Text style={styles.heroTitle}>You're out of credits.</Text>
-            <Text style={styles.heroBody}>
-              Your roast credits are all used up.{"\n"}
-              Credit packs are coming soon.
-            </Text>
-          </LinearGradient>
+            <View style={[styles.handle, { backgroundColor: colors.border }]} />
 
-          {/* ── Coming soon packs ── */}
-          <View style={styles.packsSection}>
-            <Text style={[styles.packsLabel, { color: colors.mutedForeground }]}>
-              UPCOMING CREDIT PACKS
-            </Text>
-            <View style={styles.packs}>
-              {CREDIT_PACKS.map((pack) => (
-                <View
-                  key={pack.label}
-                  style={[
-                    styles.packCard,
-                    { backgroundColor: colors.secondary, borderColor: colors.border, opacity: 0.55 },
-                  ]}
-                >
-                  <View style={styles.packLeft}>
-                    <Text style={[styles.packLabel, { color: colors.foreground }]}>{pack.label}</Text>
-                    <Text style={[styles.packTokens, { color: colors.mutedForeground }]}>{pack.tokens}</Text>
-                  </View>
-                  <View style={[styles.packBadge, { backgroundColor: "#8b5cf610", borderColor: "#8b5cf625" }]}>
-                    <Text style={styles.packBadgeText}>Soon</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
+            <LinearGradient colors={["#1a0533", "#2d0a5e"]} style={styles.heroCard}>
+              <View
+                style={[
+                  styles.iconCircle,
+                  { backgroundColor: "#8b5cf620", borderColor: "#8b5cf630" },
+                ]}
+              >
+                <Feather name="zap-off" size={26} color="#8b5cf6" />
+              </View>
+              <Text style={styles.heroTitle}>You're out of credits.</Text>
+              <Text style={styles.heroBody}>
+                You've used all your roast credits.{"\n"}
+                Top up to keep the roasts coming.
+              </Text>
+            </LinearGradient>
 
-          {/* ── CTA ── */}
-          <TouchableOpacity
-            style={[styles.gotItBtn, { backgroundColor: colors.primary }]}
-            onPress={onClose}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.gotItText}>Got it</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.buyBtn, { backgroundColor: colors.primary }]}
+              onPress={() => setShowBilling(true)}
+              activeOpacity={0.85}
+            >
+              <Feather name="zap" size={16} color="#fff" />
+              <Text style={styles.buyBtnText}>Buy Credits</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.laterBtn}
+              onPress={onClose}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.laterText, { color: colors.mutedForeground }]}>
+                Maybe later
+              </Text>
+            </TouchableOpacity>
+          </Pressable>
         </Pressable>
-      </Pressable>
-    </Modal>
+      </Modal>
+    </>
   );
 }
 
@@ -148,47 +140,20 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     textAlign: "center",
   },
-  packsSection: { gap: 10 },
-  packsLabel: {
-    fontSize: 10,
-    fontFamily: "Inter_700Bold",
-    letterSpacing: 1.2,
-    paddingHorizontal: 2,
-  },
-  packs: { gap: 8 },
-  packCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  packLeft: { gap: 2 },
-  packLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
-  packTokens: { fontSize: 11, fontFamily: "Inter_400Regular" },
-  packBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  packBadgeText: {
-    color: "#8b5cf6",
-    fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
-  },
-  gotItBtn: {
+  buyBtn: {
     borderRadius: 14,
     paddingVertical: 16,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: 8,
     minHeight: 52,
   },
-  gotItText: {
+  buyBtnText: {
     color: "#fff",
     fontSize: 15,
     fontFamily: "Inter_700Bold",
   },
+  laterBtn: { alignItems: "center", paddingVertical: 4 },
+  laterText: { fontSize: 14, fontFamily: "Inter_400Regular" },
 });

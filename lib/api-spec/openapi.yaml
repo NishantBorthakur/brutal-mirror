@@ -208,6 +208,122 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LogoutSuccess'
+  /account/me:
+    get:
+      operationId: getAccountMe
+      tags: [roast]
+      summary: Get authenticated user account and credit balance
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+      responses:
+        "200":
+          description: Account info retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountMeResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /billing/create-order:
+    post:
+      operationId: createBillingOrder
+      tags: [billing]
+      summary: Create a Razorpay order for a credit pack
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderRequest"
+      responses:
+        "200":
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateOrderResponse"
+        "400":
+          description: Invalid pack ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "503":
+          description: Billing not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /billing/verify-payment:
+    post:
+      operationId: verifyBillingPayment
+      tags: [billing]
+      summary: Verify a Razorpay payment and credit the user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyPaymentRequest"
+      responses:
+        "200":
+          description: Payment verified and credits added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerifyPaymentResponse"
+        "400":
+          description: Invalid signature
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403":
+          description: Order belongs to another user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /billing/transactions:
+    get:
+      operationId: getBillingTransactions
+      tags: [billing]
+      summary: Get the authenticated user's credit transaction history
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+      responses:
+        "200":
+          description: Transaction list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionsResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
 components:
   securitySchemes:
     bearerAuth:
@@ -381,6 +497,85 @@ components:
         success:
           type: boolean
           const: true
+    AccountMeResponse:
+      type: object
+      required: [user, creditsBalance]
+      properties:
+        user:
+          $ref: "#/components/schemas/AuthUser"
+        creditsBalance:
+          type: integer
+    CreateOrderRequest:
+      type: object
+      required: [packId]
+      properties:
+        packId:
+          type: string
+          enum: [starter, value, power]
+    CreateOrderResponse:
+      type: object
+      required: [orderId, amount, currency, keyId, packId, credits, packLabel]
+      properties:
+        orderId:
+          type: string
+        amount:
+          type: integer
+          description: Amount in paise
+        currency:
+          type: string
+        keyId:
+          type: string
+        packId:
+          type: string
+        credits:
+          type: integer
+        packLabel:
+          type: string
+    VerifyPaymentRequest:
+      type: object
+      required: [razorpay_order_id, razorpay_payment_id, razorpay_signature]
+      properties:
+        razorpay_order_id:
+          type: string
+        razorpay_payment_id:
+          type: string
+        razorpay_signature:
+          type: string
+    VerifyPaymentResponse:
+      type: object
+      required: [success, creditsBalance]
+      properties:
+        success:
+          type: boolean
+        creditsBalance:
+          type: integer
+        alreadyVerified:
+          type: boolean
+    TransactionItem:
+      type: object
+      required: [id, type, credits, reason, createdAt]
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        credits:
+          type: integer
+        balanceAfter:
+          type: integer
+        reason:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    TransactionsResponse:
+      type: object
+      required: [transactions]
+      properties:
+        transactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/TransactionItem"
     ErrorEnvelope:
       type: object
       required: [error]
