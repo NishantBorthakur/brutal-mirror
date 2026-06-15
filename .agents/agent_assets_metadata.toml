@@ -11,3 +11,9 @@ id = "01IWlrLFkFpS1aYdRvJyM"
 uri = "file://artifacts/mobile/store-listing.md"
 type = "text"
 title = "Brutal Mirror — Play Store Listing"
+
+[[outputs]]
+id = "7wWBJx_dOPCdO3-Qg1kGE"
+uri = "file://billing-analysis.md"
+type = "text"
+title = "Brutal Mirror — AI Token & Billing Analysis"
