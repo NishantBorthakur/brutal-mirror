@@ -37,7 +37,12 @@ export function verifyPaymentSignature(
   if (!secret) return false;
   const body = `${orderId}|${paymentId}`;
   const expected = crypto.createHmac("sha256", secret).update(body).digest("hex");
-  return crypto.timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(signature, "hex"));
+  try {
+    return crypto.timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(signature, "hex"));
+  } catch {
+    // timingSafeEqual throws if buffers differ in length (malformed signature)
+    return false;
+  }
 }
 
 export function verifyWebhookSignature(rawBody: string, signature: string): boolean {

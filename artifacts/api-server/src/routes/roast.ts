@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { db, userCreditsTable, creditTransactionsTable, roastLogsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and, gt, sql } from "drizzle-orm";
 
 const router = Router();
 
@@ -91,16 +91,23 @@ router.post("/roast", async (req, res) => {
 
   const userId = req.user.id;
 
-  // ── Credit check ─────────────────────────────────────────────
-  const [credits] = await db
-    .select()
-    .from(userCreditsTable)
-    .where(eq(userCreditsTable.userId, userId));
+  // ── Atomic credit deduction ───────────────────────────────────
+  // Deduct before calling AI so concurrent requests cannot both pass a balance=1
+  // check and both consume a credit for free (TOCTOU race). The WHERE balance > 0
+  // guard makes the UPDATE a no-op if out of credits; RETURNING tells us the new
+  // balance without a separate SELECT.
+  const deducted = await db
+    .update(userCreditsTable)
+    .set({ balance: sql`${userCreditsTable.balance} - 1`, updatedAt: new Date() })
+    .where(and(eq(userCreditsTable.userId, userId), gt(userCreditsTable.balance, 0)))
+    .returning({ balance: userCreditsTable.balance });
 
-  if (!credits || credits.balance <= 0) {
+  if (deducted.length === 0) {
     res.status(402).json({ error: "OUT_OF_CREDITS", message: "You are out of credits." });
     return;
   }
+
+  const newBalance = deducted[0]!.balance;
 
   // ── Build prompts ────────────────────────────────────────────
   const intensityInstruction =
@@ -139,6 +146,7 @@ Respond with a JSON object with EXACTLY these fields:
   const inputPreview = content.slice(0, 200);
 
   // ── AI generation ────────────────────────────────────────────
+  // Credit is already deducted. On any failure path, refund it.
   try {
     const aiResponse = await openai.chat.completions.create({
       model: "gpt-5.4",
@@ -152,6 +160,7 @@ Respond with a JSON object with EXACTLY these fields:
 
     const rawContent = aiResponse.choices[0]?.message?.content;
     if (!rawContent) {
+      await refundCredit(userId, newBalance, { category, intensity, personality, refinementMode });
       void logFailedRoast(req, userId, { category, intensity, personality, refinementMode, inputPreview, errorMessage: "No response from AI" });
       res.status(500).json({ error: "No response from AI" });
       return;
@@ -162,21 +171,16 @@ Respond with a JSON object with EXACTLY these fields:
       result = JSON.parse(rawContent) as Record<string, unknown>;
     } catch {
       req.log.error({ rawContent }, "Failed to parse AI JSON response");
+      await refundCredit(userId, newBalance, { category, intensity, personality, refinementMode });
       void logFailedRoast(req, userId, { category, intensity, personality, refinementMode, inputPreview, errorMessage: "Invalid JSON from AI" });
       res.status(500).json({ error: "AI returned invalid response format" });
       return;
     }
 
-    // ── Deduct credit + log ───────────────────────────────────
-    const newBalance = credits.balance - 1;
-
+    // ── Log usage ────────────────────────────────────────────
+    // Balance was already atomically decremented above; just record the audit rows.
     try {
       await db.transaction(async (tx) => {
-        await tx
-          .update(userCreditsTable)
-          .set({ balance: newBalance, updatedAt: new Date() })
-          .where(eq(userCreditsTable.userId, userId));
-
         await tx.insert(creditTransactionsTable).values({
           userId,
           type: "usage",
@@ -207,10 +211,35 @@ Respond with a JSON object with EXACTLY these fields:
     res.json({ ...result, creditsRemaining: newBalance });
   } catch (err) {
     req.log.error({ err }, "Error calling OpenAI");
+    await refundCredit(userId, newBalance, { category, intensity, personality, refinementMode });
     void logFailedRoast(req, userId, { category, intensity, personality, refinementMode, inputPreview, errorMessage: String(err) });
     res.status(500).json({ error: "Failed to generate roast. Please try again." });
   }
 });
+
+async function refundCredit(
+  userId: string,
+  balanceAfterDeduction: number,
+  meta: { category: string; intensity: string; personality: string; refinementMode?: string },
+) {
+  try {
+    await db
+      .update(userCreditsTable)
+      .set({ balance: sql`${userCreditsTable.balance} + 1`, updatedAt: new Date() })
+      .where(eq(userCreditsTable.userId, userId));
+
+    await db.insert(creditTransactionsTable).values({
+      userId,
+      type: "refund",
+      credits: 1,
+      balanceAfter: balanceAfterDeduction + 1,
+      reason: "AI call failed — credit refunded",
+      metadata: { ...meta, refinementMode: meta.refinementMode ?? null },
+    });
+  } catch {
+    // Best-effort — log handled by caller
+  }
+}
 
 async function logFailedRoast(
   req: { log: { error: (obj: unknown, msg: string) => void } },

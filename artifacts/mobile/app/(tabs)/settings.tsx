@@ -181,18 +181,19 @@ function formatDate(iso: string): string {
 
 function txLabel(type: string, reason: string): string {
   if (type === "purchase") return "Purchase";
-  if (type === "initial_grant") return "Welcome gift";
+  if (type === "free_grant") return "Welcome gift";
+  if (type === "refund") return "Refunded";
   if (reason.toLowerCase().includes("refine")) return "Refinement";
   return "Roast";
 }
 
 function txIcon(type: string): "plus-circle" | "minus-circle" | "gift" {
-  if (type === "purchase" || type === "initial_grant") return "plus-circle";
+  if (type === "purchase" || type === "free_grant" || type === "refund") return "plus-circle";
   return "minus-circle";
 }
 
 function txColor(type: string): string {
-  if (type === "purchase" || type === "initial_grant") return "#10b981";
+  if (type === "purchase" || type === "free_grant" || type === "refund") return "#10b981";
   return "#ef4444";
 }
 
