@@ -1,1 +1,3 @@
 - [Android standalone APK crash patterns](android-apk-crashes.md) — three root causes found and fixed for Brutal Mirror Android builds
+- [Supabase auth + credits architecture](supabase-auth-credits.md) — how auth/credits are wired across backend and mobile
+- [Expo env var prefix](expo-env-prefix.md) — EXPO_PUBLIC_ not VITE_ for React Native; backend uses plain SUPABASE_* vars

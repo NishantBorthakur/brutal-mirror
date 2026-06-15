@@ -8,6 +8,8 @@ import React, {
   useState,
 } from "react";
 
+import { useAuth } from "@/context/AuthContext";
+
 export interface ScoreReport {
   overallRoastScore: number;
   clarity: number;
@@ -85,6 +87,8 @@ const SETTINGS_KEY = "brutal_mirror_settings";
 const MAX_HISTORY = 20;
 
 export function RoastProvider({ children }: { children: React.ReactNode }) {
+  const { session, updateCreditsBalance } = useAuth();
+
   const [history, setHistory] = useState<RoastHistoryItem[]>([]);
   const [currentResult, setCurrentResult] = useState<RoastResult | null>(null);
   const [currentMeta, setCurrentMeta] = useState<RoastMeta | null>(null);
@@ -149,23 +153,53 @@ export function RoastProvider({ children }: { children: React.ReactNode }) {
         const domain = process.env.EXPO_PUBLIC_DOMAIN;
         const baseUrl = domain ? `https://${domain}` : "";
 
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+        };
+        if (session?.access_token) {
+          headers["Authorization"] = `Bearer ${session.access_token}`;
+        }
+
         const response = await fetch(`${baseUrl}/api/roast`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify({ category, intensity, content, personality, refinementMode }),
         });
 
-        const data = (await response.json()) as RoastResult | { error: string };
+        const data = (await response.json()) as
+          | (RoastResult & { creditsRemaining?: number })
+          | { error: string; message?: string };
 
         if (!response.ok) {
-          const errData = data as { error: string };
-          throw new Error(errData.error || "The roast engine failed. Try again.");
+          const errData = data as { error: string; message?: string };
+          if (errData.error === "AUTH_REQUIRED") {
+            throw new Error("AUTH_REQUIRED");
+          }
+          if (errData.error === "OUT_OF_CREDITS") {
+            throw new Error("OUT_OF_CREDITS");
+          }
+          throw new Error(
+            errData.message ?? errData.error ?? "The roast engine failed. Try again."
+          );
         }
 
-        const result = data as RoastResult;
+        const resultData = data as RoastResult & { creditsRemaining?: number };
+        const result: RoastResult = {
+          viralOneLiner: resultData.viralOneLiner,
+          brutalRoast: resultData.brutalRoast,
+          actualDiagnosis: resultData.actualDiagnosis,
+          biggestWeaknesses: resultData.biggestWeaknesses,
+          threeFixes: resultData.threeFixes,
+          improvedVersion: resultData.improvedVersion,
+          scoreReport: resultData.scoreReport,
+        };
 
         if (!result.brutalRoast || !result.actualDiagnosis) {
           throw new Error("The AI returned a messy response. Try again.");
+        }
+
+        if (resultData.creditsRemaining !== undefined) {
+          updateCreditsBalance(resultData.creditsRemaining);
         }
 
         setCurrentResult(result);
@@ -174,7 +208,7 @@ export function RoastProvider({ children }: { children: React.ReactNode }) {
         if (refinementMode) {
           if (historyRef.current.length > 0) {
             const updated = [
-              { ...historyRef.current[0], result },
+              { ...historyRef.current[0]!, result },
               ...historyRef.current.slice(1),
             ];
             historyRef.current = updated;
@@ -206,7 +240,7 @@ export function RoastProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
       }
     },
-    [saveHistory]
+    [session, saveHistory, updateCreditsBalance]
   );
 
   const clearHistory = useCallback(async () => {

@@ -8,3 +8,71 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface RoastRequest {
+  /** The category of content being roasted */
+  category: string;
+  /** Intensity level (Honest, Harsh, Brutal, Career-ending) */
+  intensity: string;
+  /** The content to be roasted (20–3000 chars) */
+  content: string;
+  /** Roast personality mode */
+  personality: string;
+  /** Optional refinement mode (sharper, funnier, professional) */
+  refinementMode?: string;
+}
+
+export interface RoastScoreReport {
+  overallRoastScore: number;
+  clarity: number;
+  originality: number;
+  marketability: number;
+  cringeLevel: number;
+  fixability: number;
+}
+
+export interface RoastResult {
+  /** One devastating shareable sentence */
+  viralOneLiner?: string;
+  /** The main roast */
+  brutalRoast: string;
+  /** The real diagnosis of the issue */
+  actualDiagnosis: string;
+  /** List of biggest weaknesses */
+  biggestWeaknesses: string[];
+  /** Three actionable fixes */
+  threeFixes: string[];
+  /** An improved version of the input */
+  improvedVersion: string;
+  scoreReport?: RoastScoreReport;
+  /** User's remaining credit balance after this roast */
+  creditsRemaining?: number;
+}
+
+export interface ErrorResponse {
+  error: string;
+}
+
+export type AuthErrorError =
+  (typeof AuthErrorError)[keyof typeof AuthErrorError];
+
+export const AuthErrorError = {
+  AUTH_REQUIRED: "AUTH_REQUIRED",
+} as const;
+
+export interface AuthError {
+  error: AuthErrorError;
+  message: string;
+}
+
+export type OutOfCreditsErrorError =
+  (typeof OutOfCreditsErrorError)[keyof typeof OutOfCreditsErrorError];
+
+export const OutOfCreditsErrorError = {
+  OUT_OF_CREDITS: "OUT_OF_CREDITS",
+} as const;
+
+export interface OutOfCreditsError {
+  error: OutOfCreditsErrorError;
+  message: string;
+}

@@ -14,3 +14,47 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * @summary Generate a brutal AI roast
+ */
+export const CreateRoastBody = zod.object({
+  category: zod.string().describe("The category of content being roasted"),
+  intensity: zod
+    .string()
+    .describe("Intensity level (Honest, Harsh, Brutal, Career-ending)"),
+  content: zod.string().describe("The content to be roasted (20–3000 chars)"),
+  personality: zod.string().describe("Roast personality mode"),
+  refinementMode: zod
+    .string()
+    .optional()
+    .describe("Optional refinement mode (sharper, funnier, professional)"),
+});
+
+export const CreateRoastResponse = zod.object({
+  viralOneLiner: zod
+    .string()
+    .optional()
+    .describe("One devastating shareable sentence"),
+  brutalRoast: zod.string().describe("The main roast"),
+  actualDiagnosis: zod.string().describe("The real diagnosis of the issue"),
+  biggestWeaknesses: zod
+    .array(zod.string())
+    .describe("List of biggest weaknesses"),
+  threeFixes: zod.array(zod.string()).describe("Three actionable fixes"),
+  improvedVersion: zod.string().describe("An improved version of the input"),
+  scoreReport: zod
+    .object({
+      overallRoastScore: zod.number(),
+      clarity: zod.number(),
+      originality: zod.number(),
+      marketability: zod.number(),
+      cringeLevel: zod.number(),
+      fixability: zod.number(),
+    })
+    .optional(),
+  creditsRemaining: zod
+    .number()
+    .optional()
+    .describe("User's remaining credit balance after this roast"),
+});

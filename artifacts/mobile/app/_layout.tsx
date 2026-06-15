@@ -1,3 +1,5 @@
+import "react-native-url-polyfill/auto";
+
 import {
   Inter_400Regular,
   Inter_500Medium,
@@ -14,6 +16,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ToastProvider } from "@/components/Toast";
+import { AuthProvider } from "@/context/AuthContext";
 import { RoastProvider } from "@/context/RoastContext";
 
 SplashScreen.preventAutoHideAsync();
@@ -49,11 +52,13 @@ export default function RootLayout() {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <GestureHandlerRootView>
-            <RoastProvider>
-              <ToastProvider>
-                <RootLayoutNav />
-              </ToastProvider>
-            </RoastProvider>
+            <AuthProvider>
+              <RoastProvider>
+                <ToastProvider>
+                  <RootLayoutNav />
+                </ToastProvider>
+              </RoastProvider>
+            </AuthProvider>
           </GestureHandlerRootView>
         </QueryClientProvider>
       </ErrorBoundary>

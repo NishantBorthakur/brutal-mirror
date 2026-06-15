@@ -6,4 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./authError";
+export * from "./authErrorError";
+export * from "./errorResponse";
 export * from "./healthStatus";
+export * from "./outOfCreditsError";
+export * from "./outOfCreditsErrorError";
+export * from "./roastRequest";
+export * from "./roastResult";
+export * from "./roastScoreReport";

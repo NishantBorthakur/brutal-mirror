@@ -18,8 +18,10 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AuthModal } from "@/components/AuthModal";
 import { ONBOARDING_KEY } from "@/components/OnboardingCard";
 import { useToast } from "@/components/Toast";
+import { useAuth } from "@/context/AuthContext";
 import { useRoast } from "@/context/RoastContext";
 import { useColors } from "@/hooks/useColors";
 
@@ -156,12 +158,14 @@ export default function SettingsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { settings, updateSettings, clearHistory } = useRoast();
+  const { user, credits, signOut } = useAuth();
   const { showToast } = useToast();
   const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
 
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showIntensityPicker, setShowIntensityPicker] = useState(false);
   const [showPersonalityPicker, setShowPersonalityPicker] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const handleClearHistory = () => {
     Alert.alert(
@@ -187,8 +191,27 @@ export default function SettingsScreen() {
     showToast("Welcome screen will show on next launch", "info");
   };
 
+  const handleSignOut = () => {
+    Alert.alert(
+      "Sign Out",
+      "Are you sure you want to sign out?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Sign Out",
+          style: "destructive",
+          onPress: async () => {
+            await signOut();
+            showToast("Signed out", "info");
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
+      <AuthModal visible={showAuthModal} onClose={() => setShowAuthModal(false)} />
       <PickerModal
         visible={showCategoryPicker}
         title="Default Category"
@@ -227,6 +250,81 @@ export default function SettingsScreen() {
         contentContainerStyle={[styles.content, { paddingBottom: 40 }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* ── Account ── */}
+        <SectionHeader title="ACCOUNT" />
+        {user ? (
+          <View style={[styles.group, { borderColor: colors.border }]}>
+            {/* Email */}
+            <View style={[styles.settingRow, { backgroundColor: colors.card, borderColor: "transparent" }]}>
+              <View style={styles.accountIconRow}>
+                <View style={[styles.accountIcon, { backgroundColor: colors.primary + "18", borderColor: colors.primary + "30" }]}>
+                  <Feather name="user" size={13} color={colors.primary} />
+                </View>
+                <Text style={[styles.settingLabel, { color: colors.mutedForeground }]}>Email</Text>
+              </View>
+              <Text style={[styles.settingValue, { color: colors.foreground, flexShrink: 1 }]} numberOfLines={1}>
+                {user.email}
+              </Text>
+            </View>
+            <View style={[styles.separator, { backgroundColor: colors.border }]} />
+            {/* Credits */}
+            <View style={[styles.settingRow, { backgroundColor: colors.card, borderColor: "transparent" }]}>
+              <View style={styles.accountIconRow}>
+                <View style={[styles.accountIcon, { backgroundColor: colors.primary + "18", borderColor: colors.primary + "30" }]}>
+                  <Feather name="zap" size={13} color={colors.primary} />
+                </View>
+                <Text style={[styles.settingLabel, { color: colors.mutedForeground }]}>Credits</Text>
+              </View>
+              <View style={[styles.creditBadge, { backgroundColor: colors.primary + "18", borderColor: colors.primary + "30" }]}>
+                <Text style={[styles.creditBadgeText, { color: colors.primary }]}>{credits} remaining</Text>
+              </View>
+            </View>
+            <View style={[styles.separator, { backgroundColor: colors.border }]} />
+            {/* Sign out */}
+            <TouchableOpacity
+              style={[styles.settingRow, { backgroundColor: colors.card, borderColor: "transparent" }]}
+              onPress={handleSignOut}
+              activeOpacity={0.7}
+            >
+              <View style={styles.accountIconRow}>
+                <View style={[styles.accountIcon, { backgroundColor: colors.destructive + "18", borderColor: colors.destructive + "30" }]}>
+                  <Feather name="log-out" size={13} color={colors.destructive} />
+                </View>
+                <Text style={[styles.settingLabel, { color: colors.destructive }]}>Sign Out</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View
+            style={[
+              styles.signInCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <LinearGradient
+              colors={["#1a0533", "#2a0a54"]}
+              style={styles.signInGradient}
+            >
+              <View style={styles.signInGradientInner}>
+                <View style={styles.signInTextBlock}>
+                  <Text style={styles.signInCardTitle}>Create a free account</Text>
+                  <Text style={styles.signInCardBody}>
+                    Sign up and get 5 free roast credits to try the full experience.
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.signInCardBtn}
+                  onPress={() => setShowAuthModal(true)}
+                  activeOpacity={0.85}
+                >
+                  <Feather name="zap" size={14} color="#fff" />
+                  <Text style={styles.signInCardBtnText}>Sign In / Sign Up</Text>
+                </TouchableOpacity>
+              </View>
+            </LinearGradient>
+          </View>
+        )}
+
         {/* ── Defaults ── */}
         <SectionHeader title="DEFAULTS" />
         <View style={styles.group}>
@@ -373,6 +471,52 @@ const styles = StyleSheet.create({
   dangerLabel: { fontSize: 14, fontFamily: "Inter_500Medium" },
   separator: { height: StyleSheet.hairlineWidth, marginLeft: 16 },
   hint: { fontSize: 12, fontFamily: "Inter_400Regular", paddingHorizontal: 4, lineHeight: 18 },
+  accountIconRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  accountIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  creditBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  creditBadgeText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  signInCard: { borderRadius: 16, borderWidth: 1, overflow: "hidden" },
+  signInGradient: { borderRadius: 16 },
+  signInGradientInner: { padding: 20, gap: 16 },
+  signInTextBlock: { gap: 6 },
+  signInCardTitle: {
+    color: "#f3e8ff",
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: -0.2,
+  },
+  signInCardBody: {
+    color: "#a78bfa",
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 20,
+  },
+  signInCardBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#7c3aed",
+    borderRadius: 12,
+    paddingVertical: 14,
+  },
+  signInCardBtnText: {
+    color: "#fff",
+    fontSize: 14,
+    fontFamily: "Inter_700Bold",
+  },
   aboutCard: { borderRadius: 16, borderWidth: 1, overflow: "hidden" },
   aboutGradient: { padding: 20, gap: 14, borderRadius: 16 },
   aboutLogoRow: { flexDirection: "row", alignItems: "center", gap: 12 },

@@ -1,0 +1,467 @@
+Review the existing Brutal Mirror codebase first.
+
+Now implement the user database foundation for Brutal Mirror.
+
+Goal:
+Move Brutal Mirror from anonymous/local-only usage toward a proper user-based credit system.
+
+Important:
+Do NOT add Razorpay yet.
+Do NOT add payment purchase flows yet.
+Do NOT add subscriptions.
+Do NOT remove the existing roast generation flow.
+Do NOT break local history or existing UI.
+Do NOT store paid credits in localStorage.
+
+Implement user authentication, database tables, user credit balance, and credit transaction tracking.
+
+Use Supabase for database and authentication unless the existing project already has another database/auth setup.
+
+==================================================
+1. ENVIRONMENT VARIABLES
+==================================================
+
+Add support for these environment variables:
+
+Frontend:
+- VITE_SUPABASE_URL
+- VITE_SUPABASE_ANON_KEY
+
+Backend:
+- SUPABASE_URL
+- SUPABASE_SERVICE_ROLE_KEY
+
+Keep existing AI/OpenAI/Replit AI environment variables untouched.
+
+Create or update .env.example with:
+
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+OPENAI_API_KEY=
+
+Important:
+- Never expose SUPABASE_SERVICE_ROLE_KEY to the frontend.
+- Only use service role key on backend/server.
+- Frontend should only use anon key.
+
+==================================================
+2. DATABASE SCHEMA
+==================================================
+
+Create a SQL schema file:
+
+supabase/schema.sql
+
+Add these tables:
+
+A. profiles
+
+Fields:
+- id uuid primary key references auth.users(id) on delete cascade
+- email text
+- display_name text
+- credits_balance integer not null default 0
+- free_credits_granted boolean not null default false
+- created_at timestamptz default now()
+- updated_at timestamptz default now()
+
+B. credit_transactions
+
+Fields:
+- id uuid primary key default gen_random_uuid()
+- user_id uuid references profiles(id) on delete cascade
+- type text not null
+- credits integer not null
+- balance_after integer
+- reason text
+- metadata jsonb default '{}'::jsonb
+- created_at timestamptz default now()
+
+Allowed transaction types:
+- free_grant
+- usage
+- purchase
+- refund
+- adjustment
+
+C. roast_logs
+
+Fields:
+- id uuid primary key default gen_random_uuid()
+- user_id uuid references profiles(id) on delete set null
+- category text
+- intensity text
+- personality text
+- refinement_mode text
+- input_preview text
+- input_tokens integer default 0
+- output_tokens integer default 0
+- total_tokens integer default 0
+- credits_used integer default 1
+- success boolean not null default true
+- error_message text
+- created_at timestamptz default now()
+
+Enable Row Level Security on all tables.
+
+RLS policies:
+profiles:
+- Users can select their own profile.
+- Users can update only their own display_name.
+- Users must not directly update credits_balance or free_credits_granted from frontend.
+
+credit_transactions:
+- Users can select their own transactions.
+- Users cannot insert/update/delete transactions from frontend.
+
+roast_logs:
+- Users can select their own roast logs.
+- Users cannot insert/update/delete roast logs from frontend.
+
+Backend with service role should handle credit updates and logs.
+
+Add a trigger:
+- When a new auth.users record is created, automatically create a profile row.
+
+==================================================
+3. AUTHENTICATION UI
+==================================================
+
+Add a simple auth system to the frontend.
+
+Support:
+- Sign up with email/password
+- Log in with email/password
+- Log out
+- Show current user email in Settings or header
+- Show logged-in state clearly
+
+Add an Auth screen or modal.
+
+Suggested UX:
+- If user is not logged in, they can see the app but cannot generate a roast.
+- When they click Roast Me, show auth modal:
+  “Create a free account to get 5 roast credits.”
+
+Auth modal:
+Tabs:
+- Log In
+- Sign Up
+
+Fields:
+- email
+- password
+
+Buttons:
+- Continue
+- Cancel
+
+Do not overcomplicate.
+No Google login yet.
+No password reset needed unless Supabase makes it easy.
+
+==================================================
+4. FREE STARTER CREDITS
+==================================================
+
+When a new user signs up and successfully creates a profile:
+
+Grant:
+5 free credits
+
+Rules:
+- Grant only once per user.
+- Store free_credits_granted = true.
+- Insert credit_transactions row:
+  type: free_grant
+  credits: 5
+  reason: "Starter free credits"
+  balance_after: 5
+
+Important:
+This must happen securely on the backend or via a database function/trigger.
+Do not trust frontend localStorage for credit grants.
+
+==================================================
+5. CREDIT BALANCE DISPLAY
+==================================================
+
+Add credit balance display in the app.
+
+Show near generator:
+“Credits: 5”
+
+Show in Settings:
+- User email
+- Current credit balance
+- Free credits status if useful
+
+If not logged in:
+Show:
+“Sign in to get 5 free credits”
+
+==================================================
+6. CREDIT DEDUCTION RULES
+==================================================
+
+A roast or refinement costs 1 credit.
+
+Rules:
+- Fresh roast = 1 credit
+- Make it sharper = 1 credit
+- Make it funnier = 1 credit
+- Make it more professional = 1 credit
+
+Credit should be deducted only after successful AI response.
+
+Do not deduct credits if:
+- validation fails
+- user is not logged in
+- user has no credits
+- API call fails
+- AI returns invalid JSON
+- backend throws error
+
+If user has 0 credits:
+- Block generation before calling AI.
+- Show upgrade placeholder:
+  “You’re out of credits.”
+  “Credit purchases are coming soon.”
+- Do not call backend AI endpoint.
+
+==================================================
+7. BACKEND CREDIT CHECKING
+==================================================
+
+Update POST /api/roast.
+
+The request should include the user auth token from Supabase.
+
+Backend flow:
+1. Verify Supabase user from Authorization header.
+2. If no valid user, return 401.
+3. Fetch user profile using service role.
+4. If credits_balance <= 0, return 402-style error:
+   {
+     "error": "OUT_OF_CREDITS",
+     "message": "You are out of credits."
+   }
+5. Run AI roast generation.
+6. If AI succeeds and valid JSON is returned:
+   - Deduct 1 credit from profiles.credits_balance.
+   - Insert credit_transactions row:
+     type: usage
+     credits: -1
+     reason: "Roast generation" or "Roast refinement"
+     balance_after: new balance
+     metadata containing category, intensity, personality, refinementMode
+   - Insert roast_logs row:
+     user_id
+     category
+     intensity
+     personality
+     refinement_mode
+     input_preview
+     input_tokens
+     output_tokens
+     total_tokens
+     credits_used: 1
+     success: true
+7. Return AI result plus updated credits balance.
+
+If AI fails:
+- Insert roast_logs row with success=false if possible.
+- Do not deduct credit.
+- Return clean error.
+
+Important:
+Credit deduction must be server-side.
+Frontend must never directly modify credits_balance.
+
+==================================================
+8. TOKEN USAGE LOGGING
+==================================================
+
+If the AI provider response includes usage data, log it.
+
+Capture:
+- input_tokens / prompt_tokens
+- output_tokens / completion_tokens
+- total_tokens
+
+If usage data is unavailable:
+- Store 0 or null safely.
+- Do not break the app.
+
+The billing analysis estimates around 1,500 tokens per average roast, but real usage should now be logged in roast_logs for future pricing decisions.
+
+==================================================
+9. FRONTEND API UPDATE
+==================================================
+
+Update frontend calls to /api/roast.
+
+Include Supabase access token:
+
+Authorization: Bearer <access_token>
+
+Handle backend responses:
+
+401:
+Show auth modal.
+
+OUT_OF_CREDITS:
+Show out-of-credits modal/card.
+
+API failure:
+Show clean error.
+
+Successful response:
+- Render result as before.
+- Update displayed credit balance using backend response.
+- Continue supporting result tabs, share card, history, copy buttons, and regeneration actions.
+
+==================================================
+10. HISTORY BEHAVIOR
+==================================================
+
+Keep local roast history for now.
+
+Do not migrate full roast history to database yet.
+
+Reason:
+This step is only for user accounts, credits, and usage logging.
+
+Local history should still work exactly as before.
+
+If user logs out:
+- Keep local history unless existing behavior clears it.
+- Do not crash.
+
+==================================================
+11. SETTINGS SCREEN UPDATE
+==================================================
+
+Update Settings screen to include account section.
+
+If logged in:
+Show:
+- Email
+- Credits balance
+- Log out button
+
+If logged out:
+Show:
+- Sign in button
+- “Create an account to get 5 free credits.”
+
+Keep existing settings:
+- Default category
+- Default intensity
+- Default roast personality
+- Clear saved roasts
+- Reset onboarding
+- About section
+
+==================================================
+12. OUT-OF-CREDITS MODAL
+==================================================
+
+Add a polished modal/card.
+
+Title:
+“You’re out of credits.”
+
+Body:
+“Your free roast credits are finished. Credit packs are coming soon.”
+
+CTA:
+“Got it”
+
+Optional disabled buttons:
+- Buy 20 credits — Coming Soon
+- Buy 50 credits — Coming Soon
+- Buy 120 credits — Coming Soon
+
+Do not add Razorpay yet.
+
+==================================================
+13. SECURITY REQUIREMENTS
+==================================================
+
+Make sure:
+- SUPABASE_SERVICE_ROLE_KEY is backend only.
+- Frontend cannot update credits directly.
+- Backend verifies user token before generation.
+- Backend performs credit check before AI call.
+- Backend deducts credit only after successful AI response.
+- No API keys are exposed in client bundle.
+- RLS is enabled.
+- Users can only read their own profile, transactions, and roast logs.
+
+==================================================
+14. QUALITY CHECK
+==================================================
+
+After implementation, test:
+
+A. New user signup
+- User signs up
+- Profile is created
+- User receives 5 credits
+- Credit transaction is created
+
+B. Login/logout
+- Login works
+- Logout works
+- Settings update correctly
+
+C. Roast generation
+- Logged-out user is blocked and asked to sign in
+- Logged-in user with credits can generate roast
+- Credit decreases by 1 only after success
+- Result renders correctly
+- Local history still works
+
+D. Refinement
+- Each refinement costs 1 credit
+- Credit decreases after successful refinement
+- Failed refinement does not deduct credit
+
+E. Out of credits
+- User with 0 credits is blocked
+- AI endpoint is not called
+- Clean modal appears
+
+F. Backend
+- /api/health still works
+- /api/roast verifies auth
+- Missing/invalid token returns 401
+- No credit returns OUT_OF_CREDITS
+- Failed AI response does not deduct credit
+
+G. Mobile UI
+- Auth modal fits mobile
+- Credits badge fits mobile
+- Settings account section fits mobile
+- No horizontal scrolling
+
+==================================================
+15. FINAL OUTPUT
+==================================================
+
+After implementation, provide:
+
+1. Summary of database/auth changes
+2. Supabase SQL file location
+3. Environment variables needed
+4. How to create the Supabase project
+5. How to run the app
+6. How to test signup/login/credits
+7. Any limitations or remaining TODOs
+
+Remember:
+This step is only the user database and credit foundation.
+Razorpay credit purchases come later.

@@ -20,6 +20,7 @@ import {
   View,
 } from "react-native";
 
+import { useAuth } from "@/context/AuthContext";
 import { useRoast } from "@/context/RoastContext";
 import { useColors } from "@/hooks/useColors";
 import { ExampleChips } from "./ExampleChips";
@@ -226,12 +227,15 @@ function PersonalityPickerModal({
 
 export interface RoastFormProps {
   onResultReady?: () => void;
+  onNeedAuth?: () => void;
+  onNoCredits?: () => void;
 }
 
 export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
-  function RoastForm({ onResultReady }, ref) {
+  function RoastForm({ onResultReady, onNeedAuth, onNoCredits }, ref) {
     const colors = useColors();
     const { generateRoast, isLoading, error, settings, settingsLoaded } = useRoast();
+    const { session, credits } = useAuth();
 
     const [category, setCategory] = useState(settings.defaultCategory);
     const [intensity, setIntensity] = useState(settings.defaultIntensity);
@@ -245,7 +249,6 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
 
     const buttonScale = useRef(new Animated.Value(1)).current;
 
-    // Re-apply defaults when settings change (only if textarea is untouched)
     useEffect(() => {
       if (!content) {
         setCategory(settings.defaultCategory);
@@ -276,7 +279,19 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
     const pressOut = () =>
       Animated.spring(buttonScale, { toValue: 1, useNativeDriver: true, speed: 40 }).start();
 
+    const isSpecialError = error === "AUTH_REQUIRED" || error === "OUT_OF_CREDITS";
+
     const handleSubmit = async () => {
+      // Auth/credits pre-check — show modals instead of API errors
+      if (!session) {
+        onNeedAuth?.();
+        return;
+      }
+      if (credits <= 0) {
+        onNoCredits?.();
+        return;
+      }
+
       if (charCount < MIN_LENGTH) {
         setValidationError(
           charCount === 0
@@ -296,7 +311,7 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
     };
 
     const textAreaBorderColor = (() => {
-      if (validationError || error || isOverLimit) return colors.destructive;
+      if (validationError || (error && !isSpecialError) || isOverLimit) return colors.destructive;
       if (isFocused) return colors.primary;
       return colors.border;
     })();
@@ -430,7 +445,7 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
           </View>
         </View>
 
-        {(validationError || error) && (
+        {(validationError || (error && !isSpecialError)) && (
           <View
             style={[
               styles.errorBox,
@@ -439,7 +454,7 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
           >
             <Feather name="alert-circle" size={14} color={colors.destructive} />
             <Text style={[styles.errorText, { color: colors.destructive }]}>
-              {validationError || error}
+              {validationError ?? error}
             </Text>
           </View>
         )}
