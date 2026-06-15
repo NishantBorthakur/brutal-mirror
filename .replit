@@ -46,9 +46,9 @@ externalPort = 3003
 [userenv]
 
 [userenv.shared]
+CI = "true"
 
 [userenv.production]
-CI = "true"
 
 [nix]
 channel = "stable-25_05"
