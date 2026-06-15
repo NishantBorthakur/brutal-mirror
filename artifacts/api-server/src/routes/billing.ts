@@ -234,7 +234,7 @@ router.post("/billing/verify-payment", async (req: Request, res: Response) => {
 });
 
 // POST /api/billing/razorpay-webhook
-router.post("/billing/razorpay-webhook", async (req: ReqWithRawBody, res: Response) => {
+router.post("/billing/razorpay-webhook", (req: ReqWithRawBody, res: Response) => {
   const signature = req.headers["x-razorpay-signature"] as string | undefined;
   const rawBody = req.rawBody ?? JSON.stringify(req.body);
 
@@ -243,6 +243,10 @@ router.post("/billing/razorpay-webhook", async (req: ReqWithRawBody, res: Respon
     return;
   }
 
+  // Respond immediately — Razorpay requires 2XX within 5 seconds.
+  res.json({ received: true });
+
+  // Process the event in the background after the response is sent.
   const event = req.body as {
     event?: string;
     payload?: { payment?: { entity?: { order_id?: string; id?: string } } };
@@ -252,28 +256,30 @@ router.post("/billing/razorpay-webhook", async (req: ReqWithRawBody, res: Respon
   const razorpayOrderId = entity?.order_id;
   const razorpayPaymentId = entity?.id;
 
-  if (razorpayOrderId) {
+  if (!razorpayOrderId) return;
+
+  (async () => {
     const [order] = await db
       .select()
       .from(paymentOrdersTable)
       .where(eq(paymentOrdersTable.razorpayOrderId, razorpayOrderId));
 
-    if (order && order.status !== "verified" && order.status !== "paid") {
-      if (event.event === "payment.captured" && razorpayPaymentId) {
-        await db
-          .update(paymentOrdersTable)
-          .set({ status: "paid", razorpayPaymentId, paidAt: new Date(), updatedAt: new Date() })
-          .where(eq(paymentOrdersTable.id, order.id));
-      } else if (event.event === "payment.failed") {
-        await db
-          .update(paymentOrdersTable)
-          .set({ status: "failed", updatedAt: new Date() })
-          .where(eq(paymentOrdersTable.id, order.id));
-      }
-    }
-  }
+    if (!order || order.status === "verified" || order.status === "paid") return;
 
-  res.json({ received: true });
+    if (event.event === "payment.captured" && razorpayPaymentId) {
+      await db
+        .update(paymentOrdersTable)
+        .set({ status: "paid", razorpayPaymentId, paidAt: new Date(), updatedAt: new Date() })
+        .where(eq(paymentOrdersTable.id, order.id));
+    } else if (event.event === "payment.failed") {
+      await db
+        .update(paymentOrdersTable)
+        .set({ status: "failed", updatedAt: new Date() })
+        .where(eq(paymentOrdersTable.id, order.id));
+    }
+  })().catch((err: unknown) => {
+    req.log.error({ err }, "webhook background processing error");
+  });
 });
 
 // GET /api/billing/transactions
