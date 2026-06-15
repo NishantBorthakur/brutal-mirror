@@ -1,0 +1,42 @@
+Review the current Brutal Mirror billing implementation carefully.
+
+The Razorpay payment flow is working, but the webhook currently only updates payment order status for audit. Improve the webhook so it can safely grant credits as a fallback when /api/billing/verify-payment fails or is never called after a successful payment.
+
+Goal:
+If Razorpay sends a payment.captured webhook for one of our valid payment orders, the backend should grant credits to the correct user if credits have not already been granted.
+
+Critical requirements:
+- Keep /api/billing/verify-payment as the primary instant credit grant flow.
+- Add webhook fallback credit granting only for payment.captured.
+- Must be fully idempotent.
+- Never add credits twice for the same Razorpay order/payment.
+- Must verify Razorpay webhook signature using RAZORPAY_WEBHOOK_SECRET before doing anything.
+- Must only grant credits for payment_orders created by Brutal Mirror.
+- Must use existing server-side pack/order data, not any frontend data.
+- Must run credit grant inside a database transaction.
+- Must update payment_orders status safely.
+- Must insert credit_transactions row only if credits are newly granted.
+- If order is already verified/paid and credits were already granted, do nothing and return success.
+- Keep fast webhook response behavior if possible, but do not sacrifice correctness.
+
+Implementation details:
+1. Locate payment_order by razorpay_order_id from the webhook payload.
+2. Confirm payment_order exists.
+3. Confirm status is not already verified with credits granted.
+4. Confirm pack_id, amount, and credits match the stored payment_order.
+5. Add credits to user_credits.balance.
+6. Insert credit_transactions:
+   type: purchase
+   credits: order.credits
+   reason: "Razorpay credit purchase via webhook fallback"
+   metadata including razorpay_order_id, razorpay_payment_id, pack_id, amount_in_paise, source: "webhook"
+7. Mark payment_orders status as verified or paid, store razorpay_payment_id, paid_at, updated_at.
+8. Ensure double webhook delivery does not duplicate credits.
+
+Also add tests/manual verification steps:
+- Normal frontend verify-payment flow still works.
+- Webhook after already verified payment does not add credits twice.
+- Webhook-only payment.captured grants credits once.
+- Duplicate webhook delivery grants credits only once.
+- payment.failed updates status but does not grant credits.
+- Invalid webhook signature is rejected.

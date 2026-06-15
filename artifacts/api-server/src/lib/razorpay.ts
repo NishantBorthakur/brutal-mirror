@@ -44,7 +44,12 @@ export function verifyWebhookSignature(rawBody: string, signature: string): bool
   const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
   if (!secret) return false;
   const expected = crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
-  return expected === signature;
+  try {
+    return crypto.timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(signature, "hex"));
+  } catch {
+    // timingSafeEqual throws if buffers differ in length (malformed signature)
+    return false;
+  }
 }
 
 export function generateCheckoutHtml(opts: {

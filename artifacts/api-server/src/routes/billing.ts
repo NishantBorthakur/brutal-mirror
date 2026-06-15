@@ -5,7 +5,7 @@ import {
   userCreditsTable,
   creditTransactionsTable,
 } from "@workspace/db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, ne, desc } from "drizzle-orm";
 import {
   PACKS,
   getRazorpayInstance,
@@ -238,7 +238,12 @@ router.post("/billing/razorpay-webhook", (req: ReqWithRawBody, res: Response) =>
   const signature = req.headers["x-razorpay-signature"] as string | undefined;
   const rawBody = req.rawBody ?? JSON.stringify(req.body);
 
-  if (signature && !verifyWebhookSignature(rawBody, signature)) {
+  // Signature is mandatory — every legitimate Razorpay delivery includes it.
+  if (!signature) {
+    res.status(400).json({ error: "Missing webhook signature." });
+    return;
+  }
+  if (!verifyWebhookSignature(rawBody, signature)) {
     res.status(400).json({ error: "Invalid webhook signature." });
     return;
   }
@@ -246,7 +251,7 @@ router.post("/billing/razorpay-webhook", (req: ReqWithRawBody, res: Response) =>
   // Respond immediately — Razorpay requires 2XX within 5 seconds.
   res.json({ received: true });
 
-  // Process the event in the background after the response is sent.
+  // Process in background after the response is flushed.
   const event = req.body as {
     event?: string;
     payload?: { payment?: { entity?: { order_id?: string; id?: string } } };
@@ -259,26 +264,110 @@ router.post("/billing/razorpay-webhook", (req: ReqWithRawBody, res: Response) =>
   if (!razorpayOrderId) return;
 
   (async () => {
-    const [order] = await db
-      .select()
-      .from(paymentOrdersTable)
-      .where(eq(paymentOrdersTable.razorpayOrderId, razorpayOrderId));
-
-    if (!order || order.status === "verified" || order.status === "paid") return;
-
     if (event.event === "payment.captured" && razorpayPaymentId) {
-      await db
-        .update(paymentOrdersTable)
-        .set({ status: "paid", razorpayPaymentId, paidAt: new Date(), updatedAt: new Date() })
-        .where(eq(paymentOrdersTable.id, order.id));
+      // Locate the order created by this app — ignore unknown order IDs.
+      const [order] = await db
+        .select()
+        .from(paymentOrdersTable)
+        .where(eq(paymentOrdersTable.razorpayOrderId, razorpayOrderId));
+
+      if (!order) {
+        req.log.warn({ razorpayOrderId }, "webhook: unknown order, ignoring");
+        return;
+      }
+
+      // Fast-path: already verified means credits were already granted.
+      if (order.status === "verified") {
+        req.log.info({ razorpayOrderId }, "webhook: already verified, skipping");
+        return;
+      }
+
+      // Full idempotent credit-grant inside a DB transaction.
+      // The conditional UPDATE is the atomic idempotency lock — if /verify-payment
+      // or a duplicate webhook delivery already flipped the status to "verified" or
+      // "failed", this returns 0 rows and we abort before touching credits.
+      await db.transaction(async (tx) => {
+        const locked = await tx
+          .update(paymentOrdersTable)
+          .set({
+            status: "verified",
+            razorpayPaymentId,
+            paidAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(paymentOrdersTable.id, order.id),
+              ne(paymentOrdersTable.status, "verified"),
+              ne(paymentOrdersTable.status, "failed"),
+            ),
+          )
+          .returning({ id: paymentOrdersTable.id });
+
+        // Another process (verify-payment or duplicate webhook) already won the race.
+        if (locked.length === 0) {
+          req.log.info({ razorpayOrderId }, "webhook: status already locked, skipping credits");
+          return;
+        }
+
+        // Grant credits using order data from our DB — never trust webhook payload for amounts.
+        const [currentCredits] = await tx
+          .select()
+          .from(userCreditsTable)
+          .where(eq(userCreditsTable.userId, order.userId));
+
+        const currentBalance = currentCredits?.balance ?? 0;
+        const newBalance = currentBalance + order.credits;
+
+        if (currentCredits) {
+          await tx
+            .update(userCreditsTable)
+            .set({ balance: newBalance, updatedAt: new Date() })
+            .where(eq(userCreditsTable.userId, order.userId));
+        } else {
+          await tx.insert(userCreditsTable).values({
+            userId: order.userId,
+            balance: newBalance,
+            freeGranted: false,
+          });
+        }
+
+        await tx.insert(creditTransactionsTable).values({
+          userId: order.userId,
+          type: "purchase",
+          credits: order.credits,
+          balanceAfter: newBalance,
+          reason: "Razorpay credit purchase via webhook fallback",
+          metadata: {
+            razorpay_order_id: razorpayOrderId,
+            razorpay_payment_id: razorpayPaymentId,
+            pack_id: order.packId,
+            amount_in_paise: order.amountInPaise,
+            source: "webhook",
+          },
+        });
+
+        req.log.info(
+          { razorpayOrderId, userId: order.userId, credits: order.credits, newBalance },
+          "webhook: credits granted via fallback",
+        );
+      });
     } else if (event.event === "payment.failed") {
+      const [order] = await db
+        .select()
+        .from(paymentOrdersTable)
+        .where(eq(paymentOrdersTable.razorpayOrderId, razorpayOrderId));
+
+      // Do not overwrite a verified order — credits were already granted.
+      if (!order || order.status === "verified" || order.status === "failed") return;
+
       await db
         .update(paymentOrdersTable)
         .set({ status: "failed", updatedAt: new Date() })
         .where(eq(paymentOrdersTable.id, order.id));
     }
   })().catch((err: unknown) => {
-    req.log.error({ err }, "webhook background processing error");
+    req.log.error({ err, razorpayOrderId }, "webhook background processing error");
   });
 });
 
