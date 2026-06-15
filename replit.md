@@ -16,8 +16,9 @@ An AI-powered roasting app that gives brutally honest feedback on ideas, bios, r
 - pnpm workspaces, Node.js 24, TypeScript 5.9
 - Mobile: Expo (React Native) with expo-router
 - API: Express 5
+- Auth: Replit Auth (OIDC via `openid-client`) — browser + mobile flows
 - AI: Replit AI Integrations (OpenAI gpt-5.4) via `@workspace/integrations-openai-ai-server`
-- DB: PostgreSQL + Drizzle ORM (available but not used — history stored in AsyncStorage)
+- DB: PostgreSQL + Drizzle ORM (sessions, users, credits, roast logs)
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
 - Build: esbuild (CJS bundle)
@@ -25,7 +26,14 @@ An AI-powered roasting app that gives brutally honest feedback on ideas, bios, r
 ## Where things live
 
 - `lib/api-spec/openapi.yaml` — API contract (source of truth)
-- `artifacts/api-server/src/routes/roast.ts` — POST /api/roast endpoint
+- `lib/db/src/schema/auth.ts` — users + sessions tables (mandatory for Replit Auth)
+- `lib/db/src/schema/credits.ts` — user_credits, credit_transactions, roast_logs tables
+- `artifacts/api-server/src/lib/auth.ts` — OIDC config, session helpers (from Replit Auth template)
+- `artifacts/api-server/src/middlewares/authMiddleware.ts` — session → req.user middleware
+- `artifacts/api-server/src/routes/auth.ts` — /login, /callback, /logout, /mobile-auth/* endpoints
+- `artifacts/api-server/src/routes/profile.ts` — GET /api/profile (credit balance)
+- `artifacts/api-server/src/routes/roast.ts` — POST /api/roast endpoint (requires auth + credits)
+- `artifacts/mobile/context/AuthContext.tsx` — auth state + credits, OIDC flow via expo-auth-session
 - `artifacts/mobile/context/RoastContext.tsx` — shared app state, history (AsyncStorage), settings
 - `artifacts/mobile/constants/colors.ts` — dark theme design tokens (electric purple)
 - `artifacts/mobile/components/` — all UI components
@@ -36,6 +44,9 @@ An AI-powered roasting app that gives brutally honest feedback on ideas, bios, r
 
 ## Architecture decisions
 
+- Auth: Replit OIDC — mobile uses `expo-auth-session` PKCE flow → `POST /api/mobile-auth/token-exchange` → opaque session token stored in `expo-secure-store`
+- Credits: stored in PostgreSQL `user_credits` table; new users automatically get 5 free credits on first login
+- Each roast deducts 1 credit; `creditsRemaining` is returned in the roast response and the mobile fetches current balance from `GET /api/profile`
 - History stored in AsyncStorage (no DB needed for MVP) — 20 items max
 - Settings stored in AsyncStorage: `brutal_mirror_settings`
 - Onboarding dismissal stored in AsyncStorage: `brutal_mirror_onboarding_v1`
@@ -64,13 +75,15 @@ Users paste text (bio, startup idea, dating profile, resume, etc.) and select a 
 ## User preferences
 
 - Electric purple (`#8b5cf6`) accent on black/charcoal background
-- No authentication, no database, no payments — pure MVP
+- Replit Auth (OIDC), Replit PostgreSQL credits — no payments yet
 
 ## Gotchas
 
 - After OpenAPI spec changes: run `pnpm --filter @workspace/api-spec run codegen` before using new hooks
 - expo-clipboard version warning is expected (7.0.1 vs expected 8.0.x) but works fine
 - `useNativeDriver` warning in web preview is expected — native animations fall back to JS on web
+- `lib/integrations-openai-ai-server` has pre-existing TS errors (p-retry types + undefined check); build it with `npx tsc -p lib/integrations-openai-ai-server/tsconfig.json --noEmitOnError false` to generate declarations before typechecking api-server
+- Replit OIDC issuer: `https://replit.com/oidc` — client ID = `REPL_ID` (auto-set by Replit)
 
 ## AsyncStorage keys
 

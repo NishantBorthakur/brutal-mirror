@@ -158,7 +158,7 @@ export default function SettingsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { settings, updateSettings, clearHistory } = useRoast();
-  const { user, credits, signOut } = useAuth();
+  const { user, credits, logout } = useAuth();
   const { showToast } = useToast();
   const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
 
@@ -201,7 +201,7 @@ export default function SettingsScreen() {
           text: "Sign Out",
           style: "destructive",
           onPress: async () => {
-            await signOut();
+            await logout();
             showToast("Signed out", "info");
           },
         },

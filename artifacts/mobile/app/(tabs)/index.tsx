@@ -29,7 +29,7 @@ export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { currentResult, currentMeta, clearResult, generateRoast, isLoading, error } = useRoast();
-  const { session, credits, authLoading } = useAuth();
+  const { isAuthenticated, credits, authLoading } = useAuth();
 
   const scrollRef = useRef<ScrollView>(null);
   const resultYRef = useRef<number>(0);
@@ -112,7 +112,7 @@ export default function HomeScreen() {
 
         {/* Credits badge / Sign in button */}
         {!authLoading && (
-          session ? (
+          isAuthenticated ? (
             <View style={[styles.creditBadge, { backgroundColor: colors.primary + "15", borderColor: colors.primary + "30" }]}>
               <Feather name="zap" size={11} color={colors.primary} />
               <Text style={[styles.creditText, { color: colors.primary }]}>
@@ -161,7 +161,7 @@ export default function HomeScreen() {
               Paste your bio, startup idea, profile, resume, or app concept.
               Brutal Mirror will roast it, diagnose it, and rebuild it sharper.
             </Text>
-            {!session && (
+            {!isAuthenticated && (
               <TouchableOpacity
                 style={[styles.heroSignInPrompt, { backgroundColor: colors.primary + "14", borderColor: colors.primary + "28" }]}
                 onPress={() => setShowAuthModal(true)}

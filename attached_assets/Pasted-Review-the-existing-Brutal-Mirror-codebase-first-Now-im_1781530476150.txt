@@ -1,0 +1,351 @@
+Review the existing Brutal Mirror codebase first.
+
+Now implement user authentication and a database-backed credit foundation using Replit’s native tools.
+
+Use:
+- Replit Auth for user login
+- Replit PostgreSQL database for persistent data
+
+Do NOT use Supabase.
+Do NOT add Razorpay yet.
+Do NOT add payments yet.
+Do NOT add subscriptions.
+Do NOT remove existing roast generation.
+Do NOT break local roast history.
+Do NOT store real credits only in localStorage.
+
+Goal:
+Create a secure user-based credit system where every logged-in user gets 5 free starter credits, every roast/refinement costs 1 credit, and all credit changes are stored in the database.
+
+==================================================
+1. REPLIT AUTH SETUP
+==================================================
+
+Add Replit Auth to the app.
+
+Requirements:
+- Users must be able to log in.
+- Users must be able to log out.
+- Show logged-in user identity/email/name if available.
+- If user is not logged in and clicks Roast Me, show login prompt.
+- Do not allow AI generation for logged-out users.
+- After login, user can generate roasts if they have credits.
+
+Use Replit Auth according to the current project setup and Replit’s recommended implementation.
+
+==================================================
+2. REPLIT DATABASE SETUP
+==================================================
+
+Add/use Replit PostgreSQL database.
+
+Create database tables for:
+
+A. users / profiles
+Fields:
+- id serial or uuid primary key
+- replit_user_id text unique not null
+- email text
+- display_name text
+- credits_balance integer not null default 0
+- free_credits_granted boolean not null default false
+- created_at timestamp default now()
+- updated_at timestamp default now()
+
+B. credit_transactions
+Fields:
+- id serial or uuid primary key
+- user_id references users/profiles(id)
+- type text not null
+- credits integer not null
+- balance_after integer not null
+- reason text
+- metadata jsonb default '{}'
+- created_at timestamp default now()
+
+Transaction types:
+- free_grant
+- usage
+- purchase
+- refund
+- adjustment
+
+C. roast_logs
+Fields:
+- id serial or uuid primary key
+- user_id references users/profiles(id)
+- category text
+- intensity text
+- personality text
+- refinement_mode text
+- input_preview text
+- input_tokens integer default 0
+- output_tokens integer default 0
+- total_tokens integer default 0
+- credits_used integer default 1
+- success boolean not null default true
+- error_message text
+- created_at timestamp default now()
+
+Create migrations or schema files if the project uses Drizzle/Prisma/SQL files.
+
+==================================================
+3. USER PROFILE CREATION
+==================================================
+
+When a Replit Auth user first accesses the app/backend:
+
+- Find existing profile by replit_user_id.
+- If no profile exists, create one.
+- Grant 5 free starter credits.
+- Set free_credits_granted = true.
+- Insert credit_transactions row:
+  type: free_grant
+  credits: 5
+  reason: "Starter free credits"
+  balance_after: 5
+
+This must happen server-side.
+
+Do not let frontend create or modify credit balances directly.
+
+==================================================
+4. CREDIT DISPLAY
+==================================================
+
+Show credit balance in the app.
+
+Near generator:
+- “Credits: 5”
+
+In Settings/account area:
+- Logged-in user
+- Credits balance
+- Log out button
+
+If logged out:
+- Show “Sign in to get 5 free credits.”
+
+==================================================
+5. CREDIT RULES
+==================================================
+
+A roast or refinement costs 1 credit.
+
+Rules:
+- Fresh roast = 1 credit
+- Make it sharper = 1 credit
+- Make it funnier = 1 credit
+- Make it more professional = 1 credit
+
+Deduct credits only after successful AI response and valid JSON parsing.
+
+Do not deduct credits if:
+- user is not logged in
+- user has zero credits
+- validation fails
+- AI API fails
+- backend fails
+- AI returns invalid JSON
+
+==================================================
+6. UPDATE /api/roast
+==================================================
+
+Update POST /api/roast to require authenticated user.
+
+Backend flow:
+1. Verify Replit Auth user.
+2. Get or create profile.
+3. Check credits_balance.
+4. If credits_balance <= 0:
+   return error:
+   {
+     "error": "OUT_OF_CREDITS",
+     "message": "You are out of credits."
+   }
+5. Generate AI roast.
+6. Validate AI JSON response.
+7. Deduct 1 credit in database.
+8. Insert credit_transactions row:
+   type: usage
+   credits: -1
+   reason: "Roast generation" or "Roast refinement"
+   balance_after: updated balance
+   metadata: category, intensity, personality, refinementMode
+9. Insert roast_logs row with:
+   user_id
+   category
+   intensity
+   personality
+   refinement_mode
+   input_preview
+   token usage if available
+   credits_used: 1
+   success: true
+10. Return:
+   - AI result
+   - updated credits balance
+
+If AI fails:
+- Insert roast_logs row with success=false if possible.
+- Do not deduct credit.
+- Return clean error.
+
+==================================================
+7. TOKEN USAGE LOGGING
+==================================================
+
+If the AI response includes usage information, store:
+- input_tokens / prompt_tokens
+- output_tokens / completion_tokens
+- total_tokens
+
+If usage data is missing, store 0 or null safely.
+
+Do not break the app if usage fields are unavailable.
+
+==================================================
+8. FRONTEND CHANGES
+==================================================
+
+Update frontend to:
+- Detect logged-in user.
+- Show login prompt when needed.
+- Fetch user profile/credit balance from backend.
+- Include authentication info automatically with API requests according to Replit Auth.
+- Handle OUT_OF_CREDITS cleanly.
+- Update displayed credit balance after successful roast/refinement.
+- Keep local roast history working.
+
+==================================================
+9. OUT-OF-CREDITS MODAL
+==================================================
+
+Add a polished out-of-credits modal/card.
+
+Title:
+“You’re out of credits.”
+
+Body:
+“Your free roast credits are finished. Credit packs are coming soon.”
+
+CTA:
+“Got it”
+
+Optional disabled pack placeholders:
+- Buy 20 credits — Coming Soon
+- Buy 50 credits — Coming Soon
+- Buy 120 credits — Coming Soon
+
+Do not add Razorpay yet.
+
+==================================================
+10. SETTINGS SCREEN UPDATE
+==================================================
+
+In Settings, add Account section.
+
+If logged in:
+- Show user email/name if available.
+- Show credit balance.
+- Log out button.
+
+If logged out:
+- Show Sign in button.
+- Text: “Create an account to get 5 free credits.”
+
+Keep existing settings:
+- Default category
+- Default intensity
+- Default roast personality
+- Clear saved roasts
+- Reset onboarding
+- About section
+
+==================================================
+11. LOCAL HISTORY
+==================================================
+
+Keep existing local roast history.
+
+Do not move full roast history to database yet.
+
+Local history should still work:
+- save roast
+- open roast
+- delete roast
+- clear history
+
+Do not crash if user logs out.
+
+==================================================
+12. SECURITY REQUIREMENTS
+==================================================
+
+Make sure:
+- Credits are never modified directly from the frontend.
+- Credit checks happen server-side.
+- Credit deduction happens server-side.
+- AI endpoint requires logged-in user.
+- No database credentials are exposed to frontend.
+- No AI API keys are exposed to frontend.
+- Users cannot access or modify other users’ credits.
+- Database operations are parameterized and safe.
+
+==================================================
+13. QUALITY CHECK
+==================================================
+
+Test:
+
+A. Logged-out user:
+- Can open app.
+- Cannot generate roast.
+- Clicking Roast Me prompts login.
+
+B. New logged-in user:
+- Profile is created.
+- 5 free credits granted once.
+- Credit transaction is created.
+
+C. Existing logged-in user:
+- Existing balance loads.
+- Free credits are not granted again.
+
+D. Roast generation:
+- Costs 1 credit only after success.
+- Result renders correctly.
+- Local history still works.
+
+E. Refinement:
+- Costs 1 credit after success.
+- Failed refinement does not deduct credit.
+
+F. Out of credits:
+- AI call is blocked.
+- Out-of-credits modal appears.
+
+G. Backend:
+- /api/health still works.
+- /api/roast requires authentication.
+- Database logs credit transactions and roast logs.
+- Token usage is logged if available.
+
+H. Mobile UI:
+- Login prompt fits mobile.
+- Credits badge fits mobile.
+- Settings account section fits mobile.
+- No horizontal scrolling.
+
+==================================================
+14. FINAL OUTPUT
+==================================================
+
+After implementation, provide:
+1. Summary of auth/database changes.
+2. Database schema/tables created.
+3. Any Replit Auth setup steps needed.
+4. How credits are granted and deducted.
+5. How to test login/credits.
+6. Any known limitations.

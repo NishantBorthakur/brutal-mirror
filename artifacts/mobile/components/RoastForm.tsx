@@ -235,7 +235,7 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
   function RoastForm({ onResultReady, onNeedAuth, onNoCredits }, ref) {
     const colors = useColors();
     const { generateRoast, isLoading, error, settings, settingsLoaded } = useRoast();
-    const { session, credits } = useAuth();
+    const { isAuthenticated, credits } = useAuth();
 
     const [category, setCategory] = useState(settings.defaultCategory);
     const [intensity, setIntensity] = useState(settings.defaultIntensity);
@@ -283,7 +283,7 @@ export const RoastForm = forwardRef<RoastFormHandle, RoastFormProps>(
 
     const handleSubmit = async () => {
       // Auth/credits pre-check — show modals instead of API errors
-      if (!session) {
+      if (!isAuthenticated) {
         onNeedAuth?.();
         return;
       }

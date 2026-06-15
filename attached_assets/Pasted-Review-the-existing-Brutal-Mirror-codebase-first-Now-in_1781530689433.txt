@@ -1,0 +1,493 @@
+Review the existing Brutal Mirror codebase first.
+
+Now integrate Razorpay one-time credit purchases for Brutal Mirror.
+
+Important:
+- The app already has Replit Auth.
+- The app already has database-backed user profiles.
+- The app already has credits_balance.
+- The app already has credit_transactions.
+- The app already deducts 1 credit per roast/refinement.
+- Keep the existing credit system.
+- Do not replace the database.
+- Do not use localStorage for paid credits.
+- Do not add subscriptions yet.
+- Do not add unlimited plans yet.
+- Do not break existing roast generation.
+
+Goal:
+Allow logged-in users to buy credit packs through Razorpay.
+Purchased credits must be added only after successful server-side Razorpay payment verification.
+
+==================================================
+1. CREDIT PACKS
+==================================================
+
+Create 3 one-time credit packs:
+
+Starter Pack:
+- Price: ₹49
+- Credits: 20
+
+Value Pack:
+- Price: ₹99
+- Credits: 50
+- Mark this as “Best Value”
+
+Power Pack:
+- Price: ₹199
+- Credits: 120
+
+Credit rules:
+- 1 fresh roast = 1 credit
+- 1 refinement = 1 credit
+- Credits do not expire for now
+- Purchased credits are added to the logged-in user’s account
+- Credits must persist in the database
+
+==================================================
+2. ENVIRONMENT VARIABLES
+==================================================
+
+Add support for these backend environment variables:
+
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+RAZORPAY_WEBHOOK_SECRET=
+
+Frontend can access only the public key if needed:
+
+VITE_RAZORPAY_KEY_ID=
+
+Update .env.example with these variables.
+
+Security:
+- Never expose RAZORPAY_KEY_SECRET to frontend.
+- Never expose RAZORPAY_WEBHOOK_SECRET to frontend.
+- All payment verification must happen server-side.
+
+==================================================
+3. DATABASE UPDATES
+==================================================
+
+Add a new table if it does not already exist:
+
+payment_orders
+
+Fields:
+- id serial or uuid primary key
+- user_id references users/profiles(id)
+- razorpay_order_id text unique not null
+- razorpay_payment_id text
+- razorpay_signature text
+- pack_id text not null
+- amount_in_paise integer not null
+- currency text default 'INR'
+- credits integer not null
+- status text not null default 'created'
+- metadata jsonb default '{}'
+- created_at timestamp default now()
+- paid_at timestamp
+- updated_at timestamp default now()
+
+Allowed status values:
+- created
+- paid
+- failed
+- cancelled
+- verified
+
+Also ensure credit_transactions supports purchase records with:
+- type: purchase
+- credits: positive number
+- reason: Razorpay credit purchase
+- metadata including:
+  - razorpay_order_id
+  - razorpay_payment_id
+  - pack_id
+  - amount
+
+==================================================
+4. BACKEND ENDPOINT: CREATE RAZORPAY ORDER
+==================================================
+
+Create endpoint:
+
+POST /api/billing/create-order
+
+Requires logged-in Replit Auth user.
+
+Request body:
+{
+  "packId": "starter" | "value" | "power"
+}
+
+Backend behavior:
+1. Verify logged-in user.
+2. Validate packId against server-side pack config.
+3. Do not trust price or credits from frontend.
+4. Create Razorpay order using Razorpay server SDK.
+5. Store order in payment_orders table with status = created.
+6. Return:
+   {
+     orderId,
+     amount,
+     currency,
+     keyId,
+     packId,
+     credits
+   }
+
+Important:
+- Pack prices and credits must be defined server-side.
+- Frontend must not be able to manipulate price or credits.
+
+Server-side pack config:
+
+starter:
+- amount: 4900
+- credits: 20
+- label: Starter Pack
+
+value:
+- amount: 9900
+- credits: 50
+- label: Value Pack
+
+power:
+- amount: 19900
+- credits: 120
+- label: Power Pack
+
+Currency:
+INR
+
+==================================================
+5. FRONTEND RAZORPAY CHECKOUT
+==================================================
+
+Add a Credits / Billing section.
+
+Places to show it:
+- Settings screen
+- Out-of-credits modal
+- Near credit balance if user has low credits
+
+UI:
+Title:
+“Buy Credits”
+
+Subtitle:
+“Each roast or refinement uses 1 credit.”
+
+Show 3 credit cards:
+
+Starter Pack
+₹49
+20 credits
+
+Value Pack
+₹99
+50 credits
+Best Value badge
+
+Power Pack
+₹199
+120 credits
+
+When user clicks a pack:
+1. If not logged in, show login prompt.
+2. Call /api/billing/create-order with packId.
+3. Open Razorpay Checkout.
+4. On successful payment, call backend verification endpoint.
+5. Show success message.
+6. Refresh credit balance.
+
+Razorpay checkout options:
+- key: VITE_RAZORPAY_KEY_ID or key returned from backend
+- amount from backend
+- currency from backend
+- name: Brutal Mirror
+- description: selected pack label
+- order_id: Razorpay order ID
+- theme color: #8b5cf6
+
+Do not mark credits as purchased on frontend alone.
+
+==================================================
+6. BACKEND ENDPOINT: VERIFY PAYMENT
+==================================================
+
+Create endpoint:
+
+POST /api/billing/verify-payment
+
+Requires logged-in Replit Auth user.
+
+Request body:
+{
+  "razorpay_order_id": "...",
+  "razorpay_payment_id": "...",
+  "razorpay_signature": "..."
+}
+
+Backend behavior:
+1. Verify logged-in user.
+2. Fetch payment_order by razorpay_order_id.
+3. Ensure the order belongs to logged-in user.
+4. Ensure order is not already paid/verified.
+5. Verify Razorpay signature server-side using:
+   razorpay_order_id + "|" + razorpay_payment_id
+   and RAZORPAY_KEY_SECRET
+6. If signature is invalid:
+   - mark payment_orders status = failed
+   - return error
+7. If signature is valid:
+   - mark payment_orders status = verified or paid
+   - store razorpay_payment_id and signature
+   - add credits to user profile credits_balance
+   - insert credit_transactions row:
+     type: purchase
+     credits: pack credits
+     balance_after: updated balance
+     reason: "Razorpay credit purchase"
+     metadata:
+       razorpay_order_id
+       razorpay_payment_id
+       pack_id
+       amount_in_paise
+   - return updated credits balance
+
+Important:
+- Make this endpoint idempotent.
+- If the same payment is verified twice, do not add credits twice.
+- Return existing successful result if already verified.
+
+==================================================
+7. OPTIONAL WEBHOOK ENDPOINT
+==================================================
+
+Add optional endpoint:
+
+POST /api/billing/razorpay-webhook
+
+Use RAZORPAY_WEBHOOK_SECRET to verify webhook signature.
+
+Handle:
+- payment.captured
+- payment.failed
+
+Webhook behavior:
+- Verify signature.
+- Locate payment_order using razorpay_order_id if available.
+- Mark failed or paid accordingly.
+- Do not duplicate credits if verify-payment already added them.
+- Keep credit addition idempotent.
+
+If webhook implementation is risky, create the endpoint but keep credit granting controlled mainly by /verify-payment.
+
+==================================================
+8. CREDIT BALANCE REFRESH
+==================================================
+
+After successful purchase:
+- Refresh credit balance from backend.
+- Update visible Credits badge.
+- Close out-of-credits modal if open.
+- Show toast:
+  “50 credits added.”
+
+If payment fails:
+- Show clean error:
+  “Payment failed. No credits were added.”
+
+If user closes Razorpay:
+- Show:
+  “Payment cancelled.”
+
+==================================================
+9. LOW-CREDIT UX
+==================================================
+
+Add helpful credit prompts.
+
+If credits_balance is 0:
+Show:
+“You’re out of credits.”
+
+If credits_balance is 1 or 2:
+Show small warning near generator:
+“Low credits. Buy more before your next roast spiral.”
+
+In out-of-credits modal:
+Show credit packs directly.
+
+Do not block logged-in users from opening the billing screen.
+
+==================================================
+10. TRANSACTION HISTORY
+==================================================
+
+In Settings or Billing section, show a simple credit transaction history.
+
+Display last 10 transactions:
+- type
+- credits
+- reason
+- date/time
+
+Examples:
+- +50 Purchase
+- -1 Roast generation
+- +5 Starter free credits
+
+Fetch from backend endpoint:
+
+GET /api/billing/transactions
+
+Requires logged-in user.
+
+Users should only see their own transactions.
+
+==================================================
+11. BACKEND ENDPOINT: GET CREDIT BALANCE
+==================================================
+
+If not already present, create:
+
+GET /api/account/me
+
+Requires logged-in user.
+
+Returns:
+{
+  user,
+  profile,
+  creditsBalance
+}
+
+Frontend should use this after login, after roast generation, and after payment verification.
+
+==================================================
+12. SECURITY REQUIREMENTS
+==================================================
+
+Critical:
+- Never trust frontend price.
+- Never trust frontend credit amount.
+- Never add credits before signature verification.
+- Never add credits twice for same Razorpay payment.
+- Never expose Razorpay key secret.
+- Never allow logged-out purchases.
+- Never allow a user to verify another user’s order.
+- Use server-side pack config only.
+- Use database transactions where possible when adding credits.
+- Parameterize all SQL queries.
+
+==================================================
+13. TEST CASES
+==================================================
+
+Test the following:
+
+A. Logged-out user
+- Opens billing screen.
+- Clicks buy pack.
+- App asks user to log in.
+- No Razorpay order is created.
+
+B. Logged-in user buys Starter Pack
+- Click ₹49 pack.
+- Razorpay checkout opens.
+- Successful payment verifies server-side.
+- 20 credits added.
+- credit_transactions row created.
+- payment_orders row updated.
+- Credits badge updates.
+
+C. Logged-in user buys Value Pack
+- ₹99 pack adds 50 credits.
+- Best Value label shown.
+- Balance updates correctly.
+
+D. Logged-in user buys Power Pack
+- ₹199 pack adds 120 credits.
+- Balance updates correctly.
+
+E. Failed payment
+- No credits added.
+- Error shown.
+- payment_orders status updated if possible.
+
+F. Cancelled payment
+- No credits added.
+- User sees cancellation message.
+
+G. Double verification
+- Call verify endpoint twice with same payment.
+- Credits should be added only once.
+
+H. Tampered frontend
+- Try changing pack price or credits in frontend.
+- Backend still uses server-side config.
+- Correct amount/credits enforced.
+
+I. Wrong user verification
+- User A creates order.
+- User B tries to verify it.
+- Backend rejects.
+
+J. Out of credits
+- User with 0 credits sees billing modal.
+- After purchase, modal closes or updates.
+- User can generate roast.
+
+K. Roast after purchase
+- Generate roast.
+- Credit decreases by 1.
+- Transaction history shows purchase and usage.
+
+==================================================
+14. UI POLISH
+==================================================
+
+Make billing UI match Brutal Mirror brand:
+
+Colors:
+- #6d28d9
+- #8b5cf6
+- #a78bfa
+- dark charcoal/black
+
+Style:
+- Premium dark cards
+- Clear pack hierarchy
+- Best Value badge
+- Clean mobile layout
+- No horizontal scrolling
+- Strong CTA buttons
+- Trust microcopy:
+  “Secure payments powered by Razorpay.”
+
+Avoid:
+- Cheap pricing table look
+- Too much text
+- Payment clutter
+- Misleading unlimited wording
+
+==================================================
+15. FINAL OUTPUT
+==================================================
+
+After implementation, provide:
+
+1. Summary of Razorpay integration.
+2. Environment variables required.
+3. Database table added/changed.
+4. Credit pack configuration.
+5. How order creation works.
+6. How payment verification works.
+7. How credits are added.
+8. How idempotency is handled.
+9. Test checklist results.
+10. Any remaining TODOs.

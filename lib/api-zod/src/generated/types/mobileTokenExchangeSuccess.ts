@@ -5,9 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { AuthErrorError } from "./authErrorError";
 
-export interface AuthError {
-  error: AuthErrorError;
-  message: string;
+export interface MobileTokenExchangeSuccess {
+  token: string;
 }

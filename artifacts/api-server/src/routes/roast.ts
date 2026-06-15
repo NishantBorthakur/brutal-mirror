@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { openai } from "@workspace/integrations-openai-ai-server";
-import { isSupabaseConfigured, supabaseAdmin } from "../lib/supabase";
+import { db, userCreditsTable, creditTransactionsTable, roastLogsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 
 const router = Router();
 
@@ -82,45 +83,23 @@ router.post("/roast", async (req, res) => {
     return;
   }
 
-  // ── Auth + credit check ──────────────────────────────────────
-  let userId: string | null = null;
-  let userCreditsBalance = 0;
+  // ── Auth check ──────────────────────────────────────────────
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "AUTH_REQUIRED", message: "Sign in to generate roasts." });
+    return;
+  }
 
-  if (isSupabaseConfigured && supabaseAdmin) {
-    const authHeader = req.headers["authorization"];
-    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  const userId = req.user.id;
 
-    if (!token) {
-      res.status(401).json({ error: "AUTH_REQUIRED", message: "Sign in to generate roasts." });
-      return;
-    }
+  // ── Credit check ─────────────────────────────────────────────
+  const [credits] = await db
+    .select()
+    .from(userCreditsTable)
+    .where(eq(userCreditsTable.userId, userId));
 
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    if (authError || !user) {
-      res.status(401).json({ error: "AUTH_REQUIRED", message: "Invalid or expired session. Please sign in again." });
-      return;
-    }
-
-    userId = user.id;
-
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .select("credits_balance")
-      .eq("id", userId)
-      .single();
-
-    if (profileError || !profile) {
-      req.log.error({ err: profileError }, "Failed to fetch user profile");
-      res.status(500).json({ error: "Could not verify your account. Please try again." });
-      return;
-    }
-
-    userCreditsBalance = (profile as { credits_balance: number }).credits_balance;
-
-    if (userCreditsBalance <= 0) {
-      res.status(402).json({ error: "OUT_OF_CREDITS", message: "You are out of credits." });
-      return;
-    }
+  if (!credits || credits.balance <= 0) {
+    res.status(402).json({ error: "OUT_OF_CREDITS", message: "You are out of credits." });
+    return;
   }
 
   // ── Build prompts ────────────────────────────────────────────
@@ -157,9 +136,9 @@ Respond with a JSON object with EXACTLY these fields:
   }
 }`;
 
-  // ── AI generation ────────────────────────────────────────────
   const inputPreview = content.slice(0, 200);
 
+  // ── AI generation ────────────────────────────────────────────
   try {
     const aiResponse = await openai.chat.completions.create({
       model: "gpt-5.4",
@@ -173,7 +152,7 @@ Respond with a JSON object with EXACTLY these fields:
 
     const rawContent = aiResponse.choices[0]?.message?.content;
     if (!rawContent) {
-      await logFailedRoast(userId, { category, intensity, personality, refinementMode, inputPreview, errorMessage: "No response from AI" });
+      void logFailedRoast(req, userId, { category, intensity, personality, refinementMode, inputPreview, errorMessage: "No response from AI" });
       res.status(500).json({ error: "No response from AI" });
       return;
     }
@@ -183,59 +162,59 @@ Respond with a JSON object with EXACTLY these fields:
       result = JSON.parse(rawContent) as Record<string, unknown>;
     } catch {
       req.log.error({ rawContent }, "Failed to parse AI JSON response");
-      await logFailedRoast(userId, { category, intensity, personality, refinementMode, inputPreview, errorMessage: "Invalid JSON from AI" });
+      void logFailedRoast(req, userId, { category, intensity, personality, refinementMode, inputPreview, errorMessage: "Invalid JSON from AI" });
       res.status(500).json({ error: "AI returned invalid response format" });
       return;
     }
 
-    // ── Deduct credit + log success ──────────────────────────
-    let creditsRemaining = userCreditsBalance;
+    // ── Deduct credit + log ───────────────────────────────────
+    const newBalance = credits.balance - 1;
 
-    if (isSupabaseConfigured && supabaseAdmin && userId) {
-      const newBalance = userCreditsBalance - 1;
-      creditsRemaining = newBalance;
+    try {
+      await db.transaction(async (tx) => {
+        await tx
+          .update(userCreditsTable)
+          .set({ balance: newBalance, updatedAt: new Date() })
+          .where(eq(userCreditsTable.userId, userId));
 
-      await Promise.all([
-        supabaseAdmin
-          .from("profiles")
-          .update({ credits_balance: newBalance })
-          .eq("id", userId),
-
-        supabaseAdmin.from("credit_transactions").insert({
-          user_id: userId,
+        await tx.insert(creditTransactionsTable).values({
+          userId,
           type: "usage",
           credits: -1,
-          balance_after: newBalance,
+          balanceAfter: newBalance,
           reason: refinementMode ? "Roast refinement" : "Roast generation",
           metadata: { category, intensity, personality, refinementMode: refinementMode ?? null },
-        }),
+        });
 
-        supabaseAdmin.from("roast_logs").insert({
-          user_id: userId,
+        await tx.insert(roastLogsTable).values({
+          userId,
           category,
           intensity,
           personality,
-          refinement_mode: refinementMode ?? null,
-          input_preview: inputPreview,
-          input_tokens: aiResponse.usage?.prompt_tokens ?? 0,
-          output_tokens: aiResponse.usage?.completion_tokens ?? 0,
-          total_tokens: aiResponse.usage?.total_tokens ?? 0,
-          credits_used: 1,
+          refinementMode: refinementMode ?? null,
+          inputPreview,
+          inputTokens: aiResponse.usage?.prompt_tokens ?? 0,
+          outputTokens: aiResponse.usage?.completion_tokens ?? 0,
+          totalTokens: aiResponse.usage?.total_tokens ?? 0,
+          creditsUsed: 1,
           success: true,
-        }),
-      ]).catch((err) => req.log.error({ err }, "Failed to record credit transaction"));
+        });
+      });
+    } catch (dbErr) {
+      req.log.error({ err: dbErr }, "Failed to record credit transaction");
     }
 
-    res.json({ ...result, creditsRemaining });
+    res.json({ ...result, creditsRemaining: newBalance });
   } catch (err) {
     req.log.error({ err }, "Error calling OpenAI");
-    await logFailedRoast(userId, { category, intensity, personality, refinementMode, inputPreview, errorMessage: String(err) });
+    void logFailedRoast(req, userId, { category, intensity, personality, refinementMode, inputPreview, errorMessage: String(err) });
     res.status(500).json({ error: "Failed to generate roast. Please try again." });
   }
 });
 
 async function logFailedRoast(
-  userId: string | null,
+  req: { log: { error: (obj: unknown, msg: string) => void } },
+  userId: string,
   opts: {
     category: string;
     intensity: string;
@@ -245,21 +224,20 @@ async function logFailedRoast(
     errorMessage: string;
   }
 ) {
-  if (!isSupabaseConfigured || !supabaseAdmin || !userId) return;
   try {
-    await supabaseAdmin
-      .from("roast_logs")
-      .insert({
-        user_id: userId,
-        category: opts.category,
-        intensity: opts.intensity,
-        personality: opts.personality,
-        refinement_mode: opts.refinementMode ?? null,
-        input_preview: opts.inputPreview,
-        success: false,
-        error_message: opts.errorMessage.slice(0, 500),
-      });
-  } catch {}
+    await db.insert(roastLogsTable).values({
+      userId,
+      category: opts.category,
+      intensity: opts.intensity,
+      personality: opts.personality,
+      refinementMode: opts.refinementMode ?? null,
+      inputPreview: opts.inputPreview,
+      success: false,
+      errorMessage: opts.errorMessage.slice(0, 500),
+    });
+  } catch (err) {
+    req.log.error({ err }, "Failed to log failed roast");
+  }
 }
 
 export default router;

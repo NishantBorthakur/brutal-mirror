@@ -4,115 +4,204 @@ import React, {
   useContext,
   useEffect,
   useState,
+  type ReactNode,
 } from "react";
-import { type Session, type User } from "@supabase/supabase-js";
+import * as AuthSession from "expo-auth-session";
+import * as WebBrowser from "expo-web-browser";
+import * as SecureStore from "expo-secure-store";
 
-import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+WebBrowser.maybeCompleteAuthSession();
 
-interface AuthContextValue {
-  session: Session | null;
-  user: User | null;
-  credits: number;
-  authLoading: boolean;
-  signUp: (email: string, password: string) => Promise<{ error?: string; needsConfirmation?: boolean }>;
-  signIn: (email: string, password: string) => Promise<{ error?: string }>;
-  signOut: () => Promise<void>;
-  updateCreditsBalance: (newBalance: number) => void;
-  refreshCredits: () => Promise<void>;
+const AUTH_TOKEN_KEY = "auth_session_token";
+const ISSUER_URL = "https://replit.com/oidc";
+
+export interface AuthUser {
+  id: string;
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  profileImageUrl: string | null;
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+interface AuthContextValue {
+  user: AuthUser | null;
+  credits: number;
+  authLoading: boolean;
+  isAuthenticated: boolean;
+  login: () => Promise<void>;
+  logout: () => Promise<void>;
+  updateCreditsBalance: (n: number) => void;
+  getToken: () => Promise<string | null>;
+}
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+const AuthContext = createContext<AuthContextValue>({
+  user: null,
+  credits: 0,
+  authLoading: true,
+  isAuthenticated: false,
+  login: async () => {},
+  logout: async () => {},
+  updateCreditsBalance: () => {},
+  getToken: async () => null,
+});
+
+function getApiBaseUrl(): string {
+  const domain = process.env.EXPO_PUBLIC_DOMAIN;
+  return domain ? `https://${domain}` : "";
+}
+
+function getClientId(): string {
+  return process.env.EXPO_PUBLIC_REPL_ID ?? "";
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [credits, setCredits] = useState(0);
   const [authLoading, setAuthLoading] = useState(true);
 
-  const fetchProfile = useCallback(async (userId: string) => {
-    if (!isSupabaseConfigured) return;
+  const discovery = AuthSession.useAutoDiscovery(ISSUER_URL);
+  const redirectUri = AuthSession.makeRedirectUri();
+
+  const [request, response, promptAsync] = AuthSession.useAuthRequest(
+    {
+      clientId: getClientId(),
+      scopes: ["openid", "email", "profile", "offline_access"],
+      redirectUri,
+      prompt: AuthSession.Prompt.Login,
+    },
+    discovery,
+  );
+
+  const getToken = useCallback(async (): Promise<string | null> => {
     try {
-      const { data } = await supabase
-        .from("profiles")
-        .select("credits_balance")
-        .eq("id", userId)
-        .single();
-      if (data) setCredits(data.credits_balance ?? 0);
+      return await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const fetchCredits = useCallback(async (token: string) => {
+    try {
+      const apiBase = getApiBaseUrl();
+      const res = await fetch(`${apiBase}/api/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { credits: number };
+        setCredits(data.credits);
+      }
     } catch {}
   }, []);
 
-  useEffect(() => {
-    if (!isSupabaseConfigured) {
-      setAuthLoading(false);
-      return;
-    }
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, newSession) => {
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
-        if (newSession?.user) {
-          await fetchProfile(newSession.user.id);
-        } else {
-          setCredits(0);
-        }
+  const fetchUser = useCallback(async () => {
+    try {
+      const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+      if (!token) {
+        setUser(null);
+        setCredits(0);
         setAuthLoading(false);
+        return;
       }
-    );
 
-    return () => subscription.unsubscribe();
-  }, [fetchProfile]);
+      const apiBase = getApiBaseUrl();
+      const res = await fetch(`${apiBase}/api/auth/user`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = (await res.json()) as { user: AuthUser | null };
 
-  const signUp = async (
-    email: string,
-    password: string
-  ): Promise<{ error?: string; needsConfirmation?: boolean }> => {
-    if (!isSupabaseConfigured) {
-      return { error: "Auth not configured. Set up Supabase environment variables." };
+      if (data.user) {
+        setUser(data.user);
+        void fetchCredits(token);
+      } else {
+        await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
+        setUser(null);
+        setCredits(0);
+      }
+    } catch {
+      setUser(null);
+      setCredits(0);
+    } finally {
+      setAuthLoading(false);
     }
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) return { error: error.message };
-    if (!data.session) return { needsConfirmation: true };
-    return {};
-  };
+  }, [fetchCredits]);
 
-  const signIn = async (
-    email: string,
-    password: string
-  ): Promise<{ error?: string }> => {
-    if (!isSupabaseConfigured) {
-      return { error: "Auth not configured. Set up Supabase environment variables." };
+  useEffect(() => {
+    void fetchUser();
+  }, [fetchUser]);
+
+  useEffect(() => {
+    if (response?.type !== "success" || !request?.codeVerifier) return;
+
+    const { code, state } = response.params;
+
+    void (async () => {
+      try {
+        const apiBase = getApiBaseUrl();
+        if (!apiBase) return;
+
+        const exchangeRes = await fetch(`${apiBase}/api/mobile-auth/token-exchange`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            code,
+            code_verifier: request.codeVerifier,
+            redirect_uri: redirectUri,
+            state,
+            nonce: (request as { nonce?: string }).nonce,
+          }),
+        });
+
+        if (!exchangeRes.ok) return;
+
+        const data = (await exchangeRes.json()) as { token?: string };
+        if (data.token) {
+          await SecureStore.setItemAsync(AUTH_TOKEN_KEY, data.token);
+          setAuthLoading(true);
+          await fetchUser();
+        }
+      } catch {}
+    })();
+  }, [response, request, redirectUri, fetchUser]);
+
+  const login = useCallback(async () => {
+    try {
+      await promptAsync();
+    } catch {}
+  }, [promptAsync]);
+
+  const logout = useCallback(async () => {
+    try {
+      const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+      if (token) {
+        const apiBase = getApiBaseUrl();
+        await fetch(`${apiBase}/api/mobile-auth/logout`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+    } catch {
+    } finally {
+      await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
+      setUser(null);
+      setCredits(0);
     }
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { error: error.message };
-    return {};
-  };
-
-  const signOut = async () => {
-    if (!isSupabaseConfigured) return;
-    await supabase.auth.signOut();
-  };
-
-  const updateCreditsBalance = useCallback((newBalance: number) => {
-    setCredits(newBalance);
   }, []);
 
-  const refreshCredits = useCallback(async () => {
-    if (user) await fetchProfile(user.id);
-  }, [user, fetchProfile]);
+  const updateCreditsBalance = useCallback((n: number) => {
+    setCredits(n);
+  }, []);
 
   return (
     <AuthContext.Provider
       value={{
-        session,
         user,
         credits,
         authLoading,
-        signUp,
-        signIn,
-        signOut,
+        isAuthenticated: !!user,
+        login,
+        logout,
         updateCreditsBalance,
-        refreshCredits,
+        getToken,
       }}
     >
       {children}
@@ -121,7 +210,5 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useAuth(): AuthContextValue {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
-  return ctx;
+  return useContext(AuthContext);
 }

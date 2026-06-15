@@ -1,5 +1,3 @@
-import "react-native-url-polyfill/auto";
-
 import {
   Inter_400Regular,
   Inter_500Medium,

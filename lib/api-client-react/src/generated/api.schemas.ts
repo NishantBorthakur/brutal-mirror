@@ -49,30 +49,68 @@ export interface RoastResult {
   creditsRemaining?: number;
 }
 
-export interface ErrorResponse {
+export interface UserProfile {
+  /** Current credit balance */
+  credits: number;
+}
+
+export interface AuthUser {
+  id: string;
+  /** @nullable */
+  email: string | null;
+  /** @nullable */
+  firstName: string | null;
+  /** @nullable */
+  lastName: string | null;
+  /** @nullable */
+  profileImageUrl: string | null;
+}
+
+export interface AuthUserEnvelope {
+  user: AuthUser | null;
+}
+
+export interface MobileTokenExchangeRequest {
+  /** @minLength 1 */
+  code: string;
+  /** @minLength 1 */
+  code_verifier: string;
+  /** @minLength 1 */
+  redirect_uri: string;
+  /** @minLength 1 */
+  state: string;
+  /** @minLength 1 */
+  nonce?: string;
+}
+
+export interface MobileTokenExchangeSuccess {
+  token: string;
+}
+
+export const LogoutSuccessValue = {
+  success: true,
+} as const;
+export type LogoutSuccess = typeof LogoutSuccessValue;
+
+export interface ErrorEnvelope {
   error: string;
+  message?: string;
 }
 
-export type AuthErrorError =
-  (typeof AuthErrorError)[keyof typeof AuthErrorError];
+/**
+ * Opaque session token — `Bearer <sid>`.
+ */
+export type AuthorizationSessionHeaderParameter = string;
 
-export const AuthErrorError = {
-  AUTH_REQUIRED: "AUTH_REQUIRED",
-} as const;
+export type BeginBrowserLoginParams = {
+  /**
+   * Relative path to redirect to after login (must start with `/`). Defaults to `/`.
+   */
+  returnTo?: string;
+};
 
-export interface AuthError {
-  error: AuthErrorError;
-  message: string;
-}
-
-export type OutOfCreditsErrorError =
-  (typeof OutOfCreditsErrorError)[keyof typeof OutOfCreditsErrorError];
-
-export const OutOfCreditsErrorError = {
-  OUT_OF_CREDITS: "OUT_OF_CREDITS",
-} as const;
-
-export interface OutOfCreditsError {
-  error: OutOfCreditsErrorError;
-  message: string;
-}
+export type HandleBrowserLoginCallbackParams = {
+  code?: string;
+  state?: string;
+  iss?: string;
+};

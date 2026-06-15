@@ -87,7 +87,7 @@ const SETTINGS_KEY = "brutal_mirror_settings";
 const MAX_HISTORY = 20;
 
 export function RoastProvider({ children }: { children: React.ReactNode }) {
-  const { session, updateCreditsBalance } = useAuth();
+  const { getToken, updateCreditsBalance } = useAuth();
 
   const [history, setHistory] = useState<RoastHistoryItem[]>([]);
   const [currentResult, setCurrentResult] = useState<RoastResult | null>(null);
@@ -156,8 +156,9 @@ export function RoastProvider({ children }: { children: React.ReactNode }) {
         const headers: Record<string, string> = {
           "Content-Type": "application/json",
         };
-        if (session?.access_token) {
-          headers["Authorization"] = `Bearer ${session.access_token}`;
+        const token = await getToken();
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
         }
 
         const response = await fetch(`${baseUrl}/api/roast`, {
@@ -240,7 +241,7 @@ export function RoastProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
       }
     },
-    [session, saveHistory, updateCreditsBalance]
+    [getToken, saveHistory, updateCreditsBalance]
   );
 
   const clearHistory = useCallback(async () => {
