@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { getApiBaseUrl } from "@/lib/api";
 
 import { useAuth } from "@/context/AuthContext";
 
@@ -150,8 +151,7 @@ export function RoastProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const domain = process.env.EXPO_PUBLIC_DOMAIN;
-        const baseUrl = domain ? `https://${domain}` : "";
+        const baseUrl = getApiBaseUrl();
 
         const headers: Record<string, string> = {
           "Content-Type": "application/json",

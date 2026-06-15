@@ -25,6 +25,7 @@ import { useToast } from "@/components/Toast";
 import { useAuth } from "@/context/AuthContext";
 import { useRoast } from "@/context/RoastContext";
 import { useColors } from "@/hooks/useColors";
+import { getApiBaseUrl } from "@/lib/api";
 
 const CATEGORIES = [
   "Instagram Bio",
@@ -61,11 +62,6 @@ interface TransactionItem {
   balanceAfter?: number;
   reason: string;
   createdAt: string;
-}
-
-function getApiBaseUrl(): string {
-  const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  return domain ? `https://${domain}` : "";
 }
 
 function PickerModal({

@@ -38,7 +38,8 @@
       ],
       "expo-font",
       "expo-web-browser",
-      "./plugins/withAndroidSigning"
+      "./plugins/withAndroidSigning",
+      "./plugins/withRemovePermissions"
     ],
     "experiments": {
       "typedRoutes": true,

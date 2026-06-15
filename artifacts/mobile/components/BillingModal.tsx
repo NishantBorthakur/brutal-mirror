@@ -18,13 +18,9 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/Toast";
 import { useColors } from "@/hooks/useColors";
+import { getApiBaseUrl } from "@/lib/api";
 
 const AUTH_TOKEN_KEY = "auth_session_token";
-
-function getApiBaseUrl(): string {
-  const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  return domain ? `https://${domain}` : "";
-}
 
 interface Pack {
   id: string;

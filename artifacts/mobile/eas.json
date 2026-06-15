@@ -18,7 +18,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_DOMAIN": "brutal-ai-web.replit.app"
+        "EXPO_PUBLIC_DOMAIN": "brutal-ai-web.replit.app",
+        "EXPO_PUBLIC_REPL_ID": "64102179-4bb8-45c2-8b7e-8105ac5279ef"
       }
     },
     "production": {
@@ -31,7 +32,8 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_DOMAIN": "brutal-ai-web.replit.app"
+        "EXPO_PUBLIC_DOMAIN": "brutal-ai-web.replit.app",
+        "EXPO_PUBLIC_REPL_ID": "64102179-4bb8-45c2-8b7e-8105ac5279ef"
       }
     }
   },

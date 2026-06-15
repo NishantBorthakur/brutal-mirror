@@ -9,6 +9,7 @@ import React, {
 import * as AuthSession from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
 import * as SecureStore from "expo-secure-store";
+import { getApiBaseUrl, getClientId } from "@/lib/api";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -46,15 +47,6 @@ const AuthContext = createContext<AuthContextValue>({
   refreshCredits: async () => {},
   getToken: async () => null,
 });
-
-function getApiBaseUrl(): string {
-  const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  return domain ? `https://${domain}` : "";
-}
-
-function getClientId(): string {
-  return process.env.EXPO_PUBLIC_REPL_ID ?? "";
-}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
