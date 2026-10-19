@@ -377,19 +377,32 @@ components:
         - personality
     RoastScoreReport:
       type: object
+      additionalProperties: false
       properties:
         overallRoastScore:
           type: integer
+          minimum: 0
+          maximum: 100
         clarity:
           type: integer
+          minimum: 0
+          maximum: 100
         originality:
           type: integer
+          minimum: 0
+          maximum: 100
         marketability:
           type: integer
+          minimum: 0
+          maximum: 100
         cringeLevel:
           type: integer
+          minimum: 0
+          maximum: 100
         fixability:
           type: integer
+          minimum: 0
+          maximum: 100
       required:
         - overallRoastScore
         - clarity
@@ -399,40 +412,55 @@ components:
         - fixability
     RoastResult:
       type: object
+      additionalProperties: false
       properties:
         viralOneLiner:
           type: string
+          minLength: 1
           description: One devastating shareable sentence
         brutalRoast:
           type: string
+          minLength: 1
           description: The main roast
         actualDiagnosis:
           type: string
+          minLength: 1
           description: The real diagnosis of the issue
         biggestWeaknesses:
           type: array
+          minItems: 3
+          maxItems: 3
           items:
             type: string
+            minLength: 1
           description: List of biggest weaknesses
         threeFixes:
           type: array
+          minItems: 3
+          maxItems: 3
           items:
             type: string
+            minLength: 1
           description: Three actionable fixes
         improvedVersion:
           type: string
+          minLength: 1
           description: An improved version of the input
         scoreReport:
           $ref: "#/components/schemas/RoastScoreReport"
         creditsRemaining:
           type: integer
+          minimum: 0
           description: User's remaining credit balance after this roast
       required:
+        - viralOneLiner
         - brutalRoast
         - actualDiagnosis
         - biggestWeaknesses
         - threeFixes
         - improvedVersion
+        - scoreReport
+        - creditsRemaining
     UserProfile:
       type: object
       properties:

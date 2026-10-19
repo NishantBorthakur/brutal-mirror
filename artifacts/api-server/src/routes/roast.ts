@@ -2,6 +2,10 @@ import { Router } from "express";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { db, userCreditsTable, creditTransactionsTable, roastLogsTable } from "@workspace/db";
 import { eq, and, gt, sql } from "drizzle-orm";
+import {
+  AI_ROAST_FAILURE_MESSAGE,
+  validateAIRoastOutput,
+} from "../lib/roast-response.js";
 
 const router = Router();
 
@@ -158,24 +162,34 @@ Respond with a JSON object with EXACTLY these fields:
       response_format: { type: "json_object" },
     });
 
-    const rawContent = aiResponse.choices[0]?.message?.content;
-    if (!rawContent) {
-      await refundCredit(userId, newBalance, { category, intensity, personality, refinementMode });
-      void logFailedRoast(req, userId, { category, intensity, personality, refinementMode, inputPreview, errorMessage: "No response from AI" });
-      res.status(500).json({ error: "No response from AI" });
-      return;
-    }
+    const validation = await validateAIRoastOutput(
+      aiResponse.choices[0]?.message?.content,
+      async () =>
+        refundCredit(userId, newBalance, {
+          category,
+          intensity,
+          personality,
+          refinementMode,
+        }),
+    );
 
-    let result: Record<string, unknown>;
-    try {
-      result = JSON.parse(rawContent) as Record<string, unknown>;
-    } catch {
-      req.log.error({ rawContent }, "Failed to parse AI JSON response");
-      await refundCredit(userId, newBalance, { category, intensity, personality, refinementMode });
-      void logFailedRoast(req, userId, { category, intensity, personality, refinementMode, inputPreview, errorMessage: "Invalid JSON from AI" });
-      res.status(500).json({ error: "AI returned invalid response format" });
+    if (!validation.success) {
+      req.log.warn(
+        { reason: validation.reason },
+        "Rejected invalid AI roast response",
+      );
+      void logFailedRoast(req, userId, {
+        category,
+        intensity,
+        personality,
+        refinementMode,
+        inputPreview,
+        errorMessage: `AI response validation failed: ${validation.reason}`,
+      });
+      res.status(500).json({ error: validation.error });
       return;
     }
+    const result = validation.data;
 
     // ── Log usage ────────────────────────────────────────────
     // Balance was already atomically decremented above; just record the audit rows.
@@ -212,8 +226,8 @@ Respond with a JSON object with EXACTLY these fields:
   } catch (err) {
     req.log.error({ err }, "Error calling OpenAI");
     await refundCredit(userId, newBalance, { category, intensity, personality, refinementMode });
-    void logFailedRoast(req, userId, { category, intensity, personality, refinementMode, inputPreview, errorMessage: String(err) });
-    res.status(500).json({ error: "Failed to generate roast. Please try again." });
+    void logFailedRoast(req, userId, { category, intensity, personality, refinementMode, inputPreview, errorMessage: "AI generation failed" });
+    res.status(500).json({ error: AI_ROAST_FAILURE_MESSAGE });
   }
 });
 

@@ -3,3 +3,4 @@
 - [Expo env var prefix](expo-env-prefix.md) — EXPO_PUBLIC_ not VITE_ for React Native; backend uses plain REPL_ID env var
 - [Razorpay integration architecture](razorpay-integration.md) — WebBrowser checkout page (no native SDK), server-side verify, idempotent credits, rawBody webhook pattern
 - [Imported artifact registration](imported-artifacts.md) — imported manifests may exist without registered artifacts or managed workflows
+- [Orval generation compatibility](orval-generation-compatibility.md) — Orval 8.43 on Node 20 needs a temporary Map.groupBy polyfill; explicitly target Zod 3 output.
