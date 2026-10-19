@@ -85,8 +85,14 @@ export function BillingModal({ visible, onClose, onSuccess }: Props) {
         return;
       }
 
-      const order = (await orderRes.json()) as { orderId: string };
-      const checkoutUrl = `${apiBase}/api/billing/checkout?orderId=${encodeURIComponent(order.orderId)}&authToken=${encodeURIComponent(token)}`;
+      const order = (await orderRes.json()) as {
+        orderId: string;
+        checkoutToken: string;
+      };
+      if (!order.checkoutToken) {
+        throw new Error("Checkout authorization was not returned.");
+      }
+      const checkoutUrl = `${apiBase}/api/billing/checkout?orderId=${encodeURIComponent(order.orderId)}&checkoutToken=${encodeURIComponent(order.checkoutToken)}`;
 
       const result = await WebBrowser.openAuthSessionAsync(checkoutUrl, "brutalmirror://");
 

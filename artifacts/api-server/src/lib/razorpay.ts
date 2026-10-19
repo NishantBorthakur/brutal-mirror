@@ -64,10 +64,19 @@ export function generateCheckoutHtml(opts: {
   currency: string;
   packLabel: string;
   credits: number;
-  authToken: string;
+  verificationToken: string;
   apiBase: string;
 }): string {
-  const { keyId, orderId, amount, currency, packLabel, credits, authToken, apiBase } = opts;
+  const {
+    keyId,
+    orderId,
+    amount,
+    currency,
+    packLabel,
+    credits,
+    verificationToken,
+    apiBase,
+  } = opts;
   const escaped = (s: string | number) =>
     String(s).replace(/[<>&"'`]/g, (c) =>
       ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&#39;", "`": "&#96;" }[c] ?? c),
@@ -137,13 +146,13 @@ export function generateCheckoutHtml(opts: {
       fetch(${JSON.stringify(apiBase + "/api/billing/verify-payment")}, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " + ${JSON.stringify(authToken)}
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           razorpay_order_id: response.razorpay_order_id,
           razorpay_payment_id: response.razorpay_payment_id,
-          razorpay_signature: response.razorpay_signature
+          razorpay_signature: response.razorpay_signature,
+          checkoutVerificationToken: ${JSON.stringify(verificationToken)}
         })
       })
       .then(function(r) { return r.json(); })
