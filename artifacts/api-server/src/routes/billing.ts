@@ -4,6 +4,7 @@ import {
   paymentOrdersTable,
   userCreditsTable,
   creditTransactionsTable,
+  checkoutAuthorizationsTable,
 } from "@workspace/db";
 import { eq, and, ne, desc } from "drizzle-orm";
 import {
@@ -14,7 +15,14 @@ import {
   verifyWebhookSignature,
   generateCheckoutHtml,
 } from "../lib/razorpay";
-import { getSession } from "../lib/auth";
+import {
+  CHECKOUT_AUTH_TTL_MS,
+  claimPaymentVerificationAuthorization,
+  consumeCheckoutAuthorization,
+  createCheckoutAuthorizationToken,
+  hashCheckoutAuthorizationToken,
+  isCheckoutAuthorizationToken,
+} from "../lib/checkout-auth";
 
 type ReqWithRawBody = Request & { rawBody?: string };
 
@@ -44,6 +52,7 @@ router.post("/billing/create-order", async (req: Request, res: Response) => {
     return;
   }
 
+  const checkoutToken = createCheckoutAuthorizationToken();
   try {
     const razorpay = getRazorpayInstance();
     const order = await razorpay.orders.create({
@@ -52,17 +61,34 @@ router.post("/billing/create-order", async (req: Request, res: Response) => {
       receipt: `bm_${Date.now()}`,
     });
 
-    await db.insert(paymentOrdersTable).values({
-      userId: req.user.id,
-      razorpayOrderId: order.id,
-      packId: packId!,
-      amountInPaise: pack.amount,
-      currency: "INR",
-      credits: pack.credits,
-      status: "created",
-      metadata: { packLabel: pack.label },
+    await db.transaction(async (tx) => {
+      const [paymentOrder] = await tx
+        .insert(paymentOrdersTable)
+        .values({
+          userId: req.user.id,
+          razorpayOrderId: order.id,
+          packId: packId!,
+          amountInPaise: pack.amount,
+          currency: "INR",
+          credits: pack.credits,
+          status: "created",
+          metadata: { packLabel: pack.label },
+        })
+        .returning({ id: paymentOrdersTable.id });
+
+      if (!paymentOrder) {
+        throw new Error("Failed to persist the Razorpay order.");
+      }
+
+      await tx.insert(checkoutAuthorizationsTable).values({
+        paymentOrderId: paymentOrder.id,
+        userId: req.user.id,
+        checkoutTokenHash: hashCheckoutAuthorizationToken(checkoutToken),
+        checkoutExpiresAt: new Date(Date.now() + CHECKOUT_AUTH_TTL_MS),
+      });
     });
 
+    res.setHeader("Cache-Control", "no-store");
     res.json({
       orderId: order.id,
       amount: pack.amount,
@@ -71,6 +97,7 @@ router.post("/billing/create-order", async (req: Request, res: Response) => {
       packId,
       credits: pack.credits,
       packLabel: pack.label,
+      checkoutToken,
     });
   } catch (err) {
     req.log.error({ err }, "Failed to create Razorpay order");
@@ -80,10 +107,19 @@ router.post("/billing/create-order", async (req: Request, res: Response) => {
 
 // GET /api/billing/checkout — renders HTML checkout page
 router.get("/billing/checkout", async (req: Request, res: Response) => {
-  const { orderId, authToken } = req.query as { orderId?: string; authToken?: string };
+  const { orderId, checkoutToken } = req.query as {
+    orderId?: string;
+    checkoutToken?: string;
+  };
+  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("Referrer-Policy", "no-referrer");
 
-  if (!orderId || !authToken) {
-    res.status(400).send("<p>Missing orderId or authToken.</p>");
+  if (!orderId) {
+    res.status(400).send("<p>Missing checkout order.</p>");
+    return;
+  }
+  if (!isCheckoutAuthorizationToken(checkoutToken)) {
+    res.status(401).send("<p>Invalid or expired checkout authorization.</p>");
     return;
   }
   if (!isRazorpayConfigured()) {
@@ -91,31 +127,21 @@ router.get("/billing/checkout", async (req: Request, res: Response) => {
     return;
   }
 
-  const session = await getSession(authToken);
-  if (!session) {
-    res.status(401).send("<p>Invalid or expired session. Please sign in again.</p>");
+  const authorization = await consumeCheckoutAuthorization(
+    orderId,
+    checkoutToken,
+    db,
+  );
+  if (authorization.status !== "authorized") {
+    if (authorization.status === "order_unavailable") {
+      res.status(409).send("<p>This order has already been processed.</p>");
+    } else {
+      res.status(401).send("<p>Invalid, expired, or already used checkout authorization.</p>");
+    }
     return;
   }
 
-  const [order] = await db
-    .select()
-    .from(paymentOrdersTable)
-    .where(
-      and(
-        eq(paymentOrdersTable.razorpayOrderId, orderId),
-        eq(paymentOrdersTable.userId, session.user.id),
-      ),
-    );
-
-  if (!order) {
-    res.status(404).send("<p>Order not found.</p>");
-    return;
-  }
-  if (order.status !== "created") {
-    res.status(409).send("<p>This order has already been processed.</p>");
-    return;
-  }
-
+  const { order, verificationToken } = authorization;
   const html = generateCheckoutHtml({
     keyId: process.env.RAZORPAY_KEY_ID!,
     orderId: order.razorpayOrderId,
@@ -123,7 +149,7 @@ router.get("/billing/checkout", async (req: Request, res: Response) => {
     currency: order.currency,
     packLabel: ((order.metadata as Record<string, unknown>).packLabel as string | undefined) ?? order.packId,
     credits: order.credits,
-    authToken,
+    verificationToken,
     apiBase: getOrigin(req),
   });
 
@@ -132,17 +158,30 @@ router.get("/billing/checkout", async (req: Request, res: Response) => {
 
 // POST /api/billing/verify-payment
 router.post("/billing/verify-payment", async (req: Request, res: Response) => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "AUTH_REQUIRED" });
-    return;
-  }
-
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body as {
+  const authenticatedUserId = req.isAuthenticated() ? req.user.id : null;
+  const {
+    razorpay_order_id,
+    razorpay_payment_id,
+    razorpay_signature,
+    checkoutVerificationToken,
+  } = req.body as {
     razorpay_order_id?: string;
     razorpay_payment_id?: string;
     razorpay_signature?: string;
+    checkoutVerificationToken?: string;
   };
 
+  if (
+    checkoutVerificationToken !== undefined &&
+    !isCheckoutAuthorizationToken(checkoutVerificationToken)
+  ) {
+    res.status(401).json({ error: "Invalid or expired checkout authorization." });
+    return;
+  }
+  if (!authenticatedUserId && !checkoutVerificationToken) {
+    res.status(401).json({ error: "AUTH_REQUIRED" });
+    return;
+  }
   if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
     res.status(400).json({ error: "Missing payment credentials." });
     return;
@@ -157,27 +196,32 @@ router.post("/billing/verify-payment", async (req: Request, res: Response) => {
     res.status(404).json({ error: "Order not found." });
     return;
   }
-  if (order.userId !== req.user.id) {
+  if (authenticatedUserId && order.userId !== authenticatedUserId) {
     res.status(403).json({ error: "This order does not belong to your account." });
     return;
   }
 
   // Idempotency — already verified, return current balance
-  if (order.status === "verified" || order.status === "paid") {
+  if (
+    !checkoutVerificationToken &&
+    (order.status === "verified" || order.status === "paid")
+  ) {
     const [credits] = await db
       .select()
       .from(userCreditsTable)
-      .where(eq(userCreditsTable.userId, req.user.id));
+      .where(eq(userCreditsTable.userId, order.userId));
     res.json({ success: true, creditsBalance: credits?.balance ?? 0, alreadyVerified: true });
     return;
   }
 
   const isValid = verifyPaymentSignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
   if (!isValid) {
-    await db
-      .update(paymentOrdersTable)
-      .set({ status: "failed", updatedAt: new Date() })
-      .where(eq(paymentOrdersTable.id, order.id));
+    if (authenticatedUserId && !checkoutVerificationToken) {
+      await db
+        .update(paymentOrdersTable)
+        .set({ status: "failed", updatedAt: new Date() })
+        .where(eq(paymentOrdersTable.id, order.id));
+    }
     res.status(400).json({ error: "Payment signature verification failed." });
     return;
   }
@@ -185,12 +229,33 @@ router.post("/billing/verify-payment", async (req: Request, res: Response) => {
   const [currentCredits] = await db
     .select()
     .from(userCreditsTable)
-    .where(eq(userCreditsTable.userId, req.user.id));
+    .where(eq(userCreditsTable.userId, order.userId));
 
   const currentBalance = currentCredits?.balance ?? 0;
   const newBalance = currentBalance + order.credits;
 
-  await db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
+    if (checkoutVerificationToken) {
+      const authorized = await claimPaymentVerificationAuthorization(
+        tx,
+        order.id,
+        order.userId,
+        checkoutVerificationToken,
+      );
+      if (!authorized) return { status: "invalid_authorization" as const };
+    }
+
+    if (order.status === "verified" || order.status === "paid") {
+      const [credits] = await tx
+        .select()
+        .from(userCreditsTable)
+        .where(eq(userCreditsTable.userId, order.userId));
+      return {
+        status: "already_verified" as const,
+        creditsBalance: credits?.balance ?? 0,
+      };
+    }
+
     await tx
       .update(paymentOrdersTable)
       .set({
@@ -206,17 +271,17 @@ router.post("/billing/verify-payment", async (req: Request, res: Response) => {
       await tx
         .update(userCreditsTable)
         .set({ balance: newBalance, updatedAt: new Date() })
-        .where(eq(userCreditsTable.userId, req.user.id));
+        .where(eq(userCreditsTable.userId, order.userId));
     } else {
       await tx.insert(userCreditsTable).values({
-        userId: req.user.id,
+        userId: order.userId,
         balance: newBalance,
         freeGranted: false,
       });
     }
 
     await tx.insert(creditTransactionsTable).values({
-      userId: req.user.id,
+      userId: order.userId,
       type: "purchase",
       credits: order.credits,
       balanceAfter: newBalance,
@@ -228,9 +293,20 @@ router.post("/billing/verify-payment", async (req: Request, res: Response) => {
         amount_in_paise: order.amountInPaise,
       },
     });
+
+    return { status: "verified" as const, creditsBalance: newBalance };
   });
 
-  res.json({ success: true, creditsBalance: newBalance });
+  if (result.status === "invalid_authorization") {
+    res.status(401).json({ error: "Invalid, expired, or already used checkout authorization." });
+    return;
+  }
+
+  res.json({
+    success: true,
+    creditsBalance: result.creditsBalance,
+    ...(result.status === "already_verified" ? { alreadyVerified: true } : {}),
+  });
 });
 
 // POST /api/billing/razorpay-webhook

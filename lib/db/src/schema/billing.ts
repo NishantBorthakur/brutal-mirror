@@ -26,5 +26,31 @@ export const paymentOrdersTable = pgTable(
   ],
 );
 
+export const checkoutAuthorizationsTable = pgTable(
+  "checkout_authorizations",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    paymentOrderId: varchar("payment_order_id")
+      .notNull()
+      .unique()
+      .references(() => paymentOrdersTable.id, { onDelete: "cascade" }),
+    userId: varchar("user_id")
+      .notNull()
+      .references(() => usersTable.id, { onDelete: "cascade" }),
+    checkoutTokenHash: varchar("checkout_token_hash").notNull().unique(),
+    checkoutExpiresAt: timestamp("checkout_expires_at", { withTimezone: true }).notNull(),
+    checkoutConsumedAt: timestamp("checkout_consumed_at", { withTimezone: true }),
+    verificationTokenHash: varchar("verification_token_hash").unique(),
+    verificationExpiresAt: timestamp("verification_expires_at", { withTimezone: true }),
+    verificationConsumedAt: timestamp("verification_consumed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_checkout_authorizations_user_id").on(table.userId),
+    index("idx_checkout_authorizations_checkout_expiry").on(table.checkoutExpiresAt),
+    index("idx_checkout_authorizations_verification_expiry").on(table.verificationExpiresAt),
+  ],
+);
+
 export type PaymentOrder = typeof paymentOrdersTable.$inferSelect;
 export type InsertPaymentOrder = typeof paymentOrdersTable.$inferInsert;
