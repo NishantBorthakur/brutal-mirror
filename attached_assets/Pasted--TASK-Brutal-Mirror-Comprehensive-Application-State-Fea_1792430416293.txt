@@ -1,0 +1,348 @@
+# TASK: Brutal Mirror — Comprehensive Application State & Feature Audit
+
+You are working inside the existing **Brutal Mirror** application repository.
+
+Your task is to thoroughly inspect the CURRENT codebase and generate a detailed, accurate Markdown document describing the application's present state.
+
+**IMPORTANT: This is a READ-ONLY AUDIT.**
+
+Do not modify application code, UI, database schemas, environment variables, dependencies, configuration, or existing functionality.
+
+Your only deliverable should be a new Markdown file:
+
+`BRUTAL_MIRROR_CURRENT_STATE.md`
+
+Save this file in the project root.
+
+## 1. Project Overview
+
+Identify and document:
+
+- Application name and core purpose
+- Intended target audience
+- Main user experience
+- Current development stage
+- Whether the project is configured for web, mobile, or both
+- Current technology stack
+- Application entry points
+- Deployment configuration
+- External services and integrations
+
+Base all findings on the existing implementation.
+
+Do not assume a feature exists simply because it appears in an older README or project planning document.
+
+## 2. Complete Feature Inventory
+
+Inspect all relevant frontend and backend files.
+
+Document EVERY implemented user-facing feature, organized by functional area.
+
+Include, wherever applicable:
+
+### A. Authentication & User Accounts
+- Login and registration experience
+- Authentication provider
+- Session management
+- User profiles
+- Guest access, if available
+- Account-related restrictions
+
+### B. AI Roasting Engine
+- Supported roasting categories
+- All available intensity levels
+- All available AI personalities
+- Input validation and character limits
+- AI model and integration
+- Prompt construction and response structure
+- Roast generation workflow
+- Error handling
+- Regeneration and refinement options
+- Credit consumption rules
+
+Extract the exact categories, personalities, and intensity options from the implementation.
+
+### C. Roast Results
+- Result layout and sections
+- Scorecards and scoring metrics
+- Recommendations and improvements
+- Improved or rewritten versions
+- Viral one-liners
+- Copying and sharing features
+- Animations and interactive elements
+
+### D. Roast Vault
+- History management
+- Storage mechanism
+- Search and filtering
+- Individual roast details
+- Deletion and clearing
+- Storage limits
+- Data persistence across sessions and devices
+
+### E. Credits & Monetization
+- Free credits for new users
+- Credit deduction logic
+- Available credit packages
+- Exact pricing
+- Payment integration
+- Checkout workflow
+- Payment verification
+- Webhooks
+- Transaction history
+- Failed payment handling
+- Refund handling
+
+### F. Settings & Personalization
+- User preferences
+- Default roast settings
+- Onboarding controls
+- Account settings
+- Data management
+- Other implemented configuration options
+
+### G. UI/UX
+- Application navigation
+- Pages and screens
+- Responsive layouts
+- Desktop and mobile compatibility
+- Color palette and design system
+- Loading states
+- Notifications and toasts
+- Modals
+- Accessibility features
+- Error states
+
+Include any additional functionality discovered that does not fit these categories.
+
+## 3. Feature Implementation Status
+
+Create a comprehensive Markdown table containing:
+
+| Feature | Status | Frontend | Backend | Notes |
+|---|---|---|---|---|
+
+Use these status classifications:
+
+- **Implemented:** Clearly exists in the current codebase.
+- **Partially Implemented:** Some functionality exists, but important components are missing.
+- **Not Implemented:** Referenced or expected functionality that has no working implementation.
+- **Unverified:** Code exists, but operational functionality cannot be confirmed.
+
+Distinguish carefully between implemented code and proven working functionality.
+
+## 4. Technical Architecture
+
+Document:
+
+- Frontend framework and version
+- Backend framework and version
+- Programming languages
+- Database technology
+- ORM and schema structure
+- Authentication architecture
+- AI provider and model configuration
+- Payment architecture
+- State management
+- Local persistence
+- API specifications
+- Package management
+- Build configuration
+- Hosting and deployment configuration
+
+Also provide a concise description of the main project directory structure.
+
+## 5. Backend API Inventory
+
+Inspect all implemented API routes.
+
+Create a table containing:
+
+| Method | Endpoint | Purpose | Authentication Required | Status |
+|---|---|---|---|---|
+
+Document relevant rate limiting, request validation, credit enforcement, and authorization controls.
+
+Do not expose secrets or authentication tokens.
+
+## 6. Database Inventory
+
+Inspect the existing database schemas and migrations.
+
+Identify:
+
+- All database tables
+- Purpose of each table
+- Important fields and relationships
+- User and session storage
+- Credit balances
+- Transaction tracking
+- Roast logging
+- Payment records
+
+Describe any important data persistence limitations.
+
+Do not modify or reset the database.
+
+## 7. Deployment & Operational Readiness
+
+Inspect deployment-related configuration and scripts.
+
+Determine:
+
+- Whether the repository is configured for production deployment
+- Available build and start commands
+- Required environment variables (names only, never values)
+- External service dependencies
+- Any missing configuration
+- Build or dependency warnings
+- Known operational risks
+
+If a deployed application URL is documented, include it.
+
+Do not claim the application is operational unless it has actually been verified.
+
+## 8. Bugs, Limitations & Technical Debt
+
+Identify confirmed or strongly evidenced problems, including:
+
+- Incomplete features
+- Missing error handling
+- Payment reliability issues
+- Security vulnerabilities
+- Potential AI cost risks
+- Authentication issues
+- Storage limitations
+- UI/UX inconsistencies
+- Unused code
+- Dependency problems
+- Deployment risks
+
+Classify each finding:
+
+**Critical / High / Medium / Low**
+
+For each issue, explain its potential impact.
+
+Do not invent bugs without supporting evidence.
+
+## 9. Verification & Testing
+
+Perform safe, non-destructive checks where feasible.
+
+Examples:
+- TypeScript typechecking
+- Existing test suites
+- Build verification
+- Static code inspection
+- API route consistency checks
+
+Do not perform real payment transactions, consume paid AI credits, alter user data, or make destructive database changes.
+
+Record:
+
+- Checks performed
+- Commands executed
+- Passed checks
+- Failed checks
+- Checks that could not be performed
+- Reasons for any unverified functionality
+
+Do not silently fix issues.
+
+## 10. Current Product Maturity
+
+Provide an evidence-based assessment covering:
+
+- Feature completeness
+- Frontend maturity
+- Backend maturity
+- Authentication readiness
+- AI functionality readiness
+- Payment readiness
+- Data persistence
+- Security readiness
+- Deployment readiness
+
+Classify the application as one of:
+
+- Early Prototype
+- Functional Prototype
+- Minimum Viable Product (MVP)
+- Advanced MVP
+- Beta-Ready
+- Production-Ready
+
+Explain the classification.
+
+Do not assign arbitrary numerical completion percentages.
+
+## 11. Recommended Next Steps
+
+Provide a prioritized implementation roadmap divided into:
+
+**P0 — Critical Before Launch**
+
+Problems that could cause financial loss, security issues, or core functionality failures.
+
+**P1 — Important Improvements**
+
+Changes necessary for a reliable and polished user experience.
+
+**P2 — Future Enhancements**
+
+Optional features and improvements that would strengthen the application.
+
+Clearly distinguish required fixes from optional suggestions.
+
+## 12. Executive Summary
+
+At the very beginning of the Markdown document, include a concise executive summary containing:
+
+- Current application state
+- Main features currently implemented
+- Major components still incomplete
+- Most significant risks
+- Overall launch readiness
+- Three highest-priority next actions
+
+## AUDIT ACCURACY REQUIREMENTS
+
+1. Inspect the actual source code before making implementation claims.
+2. Use existing documentation only as supporting context.
+3. Where possible, reference relevant file paths as evidence.
+4. Clearly distinguish verified facts from assumptions.
+5. Never report a feature as operational simply because its source code exists.
+6. Identify discrepancies between documentation and implementation.
+7. Do not expose environment-variable values, credentials, secrets, or personal user data.
+8. Do not install dependencies unless essential for safe verification.
+9. Do not modify the existing application.
+10. Do not deploy or publish any changes.
+
+## FINAL DELIVERABLE
+
+Create exactly one new file:
+
+`BRUTAL_MIRROR_CURRENT_STATE.md`
+
+The document should be detailed enough that another developer or AI assistant, with no previous knowledge of Brutal Mirror, can understand:
+
+- What the application does
+- How it works
+- What has been built
+- What is partially implemented
+- What remains unverified
+- What needs improvement
+- What is necessary before launch
+
+Use clear Markdown headings, organized feature tables, accurate technical descriptions, and actionable findings.
+
+Include the audit date and, if accessible, the current Git commit hash.
+
+**After completing the audit, respond with:**
+
+1. Confirmation that the Markdown file was created.
+2. Its exact location.
+3. A brief summary of your most important findings.
+
+Do not begin implementing any recommendations. This task is documentation and verification only.
