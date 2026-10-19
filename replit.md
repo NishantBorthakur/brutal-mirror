@@ -4,6 +4,11 @@ An AI-powered roasting app that gives brutally honest feedback on ideas, bios, r
 
 ## Run & Operate
 
+- In Replit, run the managed workflows `artifacts/api-server: API Server` and `artifacts/mobile: expo`. The mobile artifact opens the Expo preview; the API is routed under `/api`. The Canvas workflow is optional and is not needed to run the app.
+- Fresh import: `pnpm install --frozen-lockfile`, then `pnpm --filter @workspace/db run push` to apply the existing schema to the development database.
+- Runtime requirements: Replit-managed `DATABASE_URL` and `REPL_ID`, plus the OpenAI integration variables below. Supabase is no longer used.
+- Optional payments: set `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, and `RAZORPAY_WEBHOOK_SECRET` through Replit Secrets. Credit purchases remain unavailable until configured.
+- Check API availability with `GET /api/healthz`; logged-out auth state is `GET /api/auth/user`.
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
 - `pnpm --filter @workspace/mobile run dev` — run the Expo mobile app
 - `pnpm run typecheck` — full typecheck across all packages

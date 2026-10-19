@@ -11,15 +11,18 @@ id = "01IWlrLFkFpS1aYdRvJyM"
 uri = "file://artifacts/mobile/store-listing.md"
 type = "text"
 title = "Brutal Mirror — Play Store Listing"
+logical_id = "be70dd80-ab3e-4ac1-a25f-7ca74d7edc93"
 
 [[outputs]]
 id = "7wWBJx_dOPCdO3-Qg1kGE"
 uri = "file://billing-analysis.md"
 type = "text"
 title = "Brutal Mirror — AI Token & Billing Analysis"
+logical_id = "96807acf-92d2-403e-b6ae-90c3118d81bd"
 
 [[outputs]]
 id = "Gncw8eXP_OrpmY8gJ0Fcw"
 uri = "file://IMPLEMENTATION_STATUS.md"
 type = "text"
 title = "Brutal Mirror — Implementation Status"
+logical_id = "a9617bfd-edec-4c40-8b46-0685a800d85b"

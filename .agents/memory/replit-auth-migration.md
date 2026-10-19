@@ -16,12 +16,5 @@ Mobile auth uses `expo-auth-session` PKCE flow → backend `/api/mobile-auth/tok
 - `GET /api/profile` returns `{ credits: number }` for the authenticated user
 - Each roast deducts 1 credit via DB transaction; `creditsRemaining` is returned in the roast response
 
-## Integrations lib build quirk
-`lib/integrations-openai-ai-server` has pre-existing TS errors (p-retry `AbortError` type + optional undefined checks). Its dist does NOT auto-build. Before `pnpm --filter @workspace/api-server run typecheck` will pass, run:
-```
-npx tsc -p lib/integrations-openai-ai-server/tsconfig.json --noEmitOnError false
-```
-This generates declarations despite errors. Also needed to add `@types/node@catalog:` to that lib's devDeps.
-
 ## AuthRequest.nonce type
 `expo-auth-session`'s `AuthRequest` type does not expose `nonce` publicly in TypeScript. Use a cast: `(request as { nonce?: string }).nonce` when forwarding to the token exchange endpoint.

@@ -1,4 +1,5 @@
 - [Android standalone APK crash patterns](android-apk-crashes.md) — three root causes found and fixed for Brutal Mirror Android builds
-- [Replit Auth migration](replit-auth-migration.md) — OIDC + credit system wired; integrations lib dist must be force-built before api-server typecheck
+- [Replit Auth migration](replit-auth-migration.md) — preserve Replit OIDC rather than restoring legacy Supabase configuration
 - [Expo env var prefix](expo-env-prefix.md) — EXPO_PUBLIC_ not VITE_ for React Native; backend uses plain REPL_ID env var
 - [Razorpay integration architecture](razorpay-integration.md) — WebBrowser checkout page (no native SDK), server-side verify, idempotent credits, rawBody webhook pattern
+- [Imported artifact registration](imported-artifacts.md) — imported manifests may exist without registered artifacts or managed workflows
