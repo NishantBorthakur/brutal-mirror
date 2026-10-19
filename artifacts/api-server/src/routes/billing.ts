@@ -2,10 +2,9 @@ import { Router, type Request, type Response } from "express";
 import {
   db,
   paymentOrdersTable,
-  userCreditsTable,
   creditTransactionsTable,
 } from "@workspace/db";
-import { eq, and, ne, desc } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import {
   PACKS,
   getRazorpayInstance,
@@ -15,6 +14,11 @@ import {
   generateCheckoutHtml,
 } from "../lib/razorpay";
 import { getSession } from "../lib/auth";
+import {
+  markPaymentOrderFailed,
+  settleVerifiedPayment,
+  settleWebhookPayment,
+} from "../lib/payment-settlement";
 
 type ReqWithRawBody = Request & { rawBody?: string };
 
@@ -148,89 +152,38 @@ router.post("/billing/verify-payment", async (req: Request, res: Response) => {
     return;
   }
 
-  const [order] = await db
-    .select()
-    .from(paymentOrdersTable)
-    .where(eq(paymentOrdersTable.razorpayOrderId, razorpay_order_id));
+  const result = await settleVerifiedPayment(
+    {
+      orderId: razorpay_order_id,
+      paymentId: razorpay_payment_id,
+      signature: razorpay_signature,
+      expectedUserId: req.user.id,
+    },
+    db,
+  );
 
-  if (!order) {
-    res.status(404).json({ error: "Order not found." });
-    return;
-  }
-  if (order.userId !== req.user.id) {
-    res.status(403).json({ error: "This order does not belong to your account." });
-    return;
-  }
-
-  // Idempotency — already verified, return current balance
-  if (order.status === "verified" || order.status === "paid") {
-    const [credits] = await db
-      .select()
-      .from(userCreditsTable)
-      .where(eq(userCreditsTable.userId, req.user.id));
-    res.json({ success: true, creditsBalance: credits?.balance ?? 0, alreadyVerified: true });
-    return;
-  }
-
-  const isValid = verifyPaymentSignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
-  if (!isValid) {
-    await db
-      .update(paymentOrdersTable)
-      .set({ status: "failed", updatedAt: new Date() })
-      .where(eq(paymentOrdersTable.id, order.id));
+  if (result.status === "invalid_signature") {
     res.status(400).json({ error: "Payment signature verification failed." });
     return;
   }
+  if (result.status === "order_not_found") {
+    res.status(404).json({ error: "Order not found." });
+    return;
+  }
+  if (result.status === "not_owned") {
+    res.status(403).json({ error: "This order does not belong to your account." });
+    return;
+  }
+  if (result.status !== "settled" && result.status !== "already_settled") {
+    res.status(409).json({ error: "Payment does not match an eligible order." });
+    return;
+  }
 
-  const [currentCredits] = await db
-    .select()
-    .from(userCreditsTable)
-    .where(eq(userCreditsTable.userId, req.user.id));
-
-  const currentBalance = currentCredits?.balance ?? 0;
-  const newBalance = currentBalance + order.credits;
-
-  await db.transaction(async (tx) => {
-    await tx
-      .update(paymentOrdersTable)
-      .set({
-        status: "verified",
-        razorpayPaymentId: razorpay_payment_id,
-        razorpaySignature: razorpay_signature,
-        paidAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(paymentOrdersTable.id, order.id));
-
-    if (currentCredits) {
-      await tx
-        .update(userCreditsTable)
-        .set({ balance: newBalance, updatedAt: new Date() })
-        .where(eq(userCreditsTable.userId, req.user.id));
-    } else {
-      await tx.insert(userCreditsTable).values({
-        userId: req.user.id,
-        balance: newBalance,
-        freeGranted: false,
-      });
-    }
-
-    await tx.insert(creditTransactionsTable).values({
-      userId: req.user.id,
-      type: "purchase",
-      credits: order.credits,
-      balanceAfter: newBalance,
-      reason: "Razorpay credit purchase",
-      metadata: {
-        razorpay_order_id,
-        razorpay_payment_id,
-        pack_id: order.packId,
-        amount_in_paise: order.amountInPaise,
-      },
-    });
+  res.json({
+    success: true,
+    creditsBalance: result.creditsBalance,
+    ...(result.status === "already_settled" ? { alreadyVerified: true } : {}),
   });
-
-  res.json({ success: true, creditsBalance: newBalance });
 });
 
 // POST /api/billing/razorpay-webhook
@@ -254,7 +207,16 @@ router.post("/billing/razorpay-webhook", (req: ReqWithRawBody, res: Response) =>
   // Process in background after the response is flushed.
   const event = req.body as {
     event?: string;
-    payload?: { payment?: { entity?: { order_id?: string; id?: string } } };
+    payload?: {
+      payment?: {
+        entity?: {
+          order_id?: string;
+          id?: string;
+          amount?: number;
+          currency?: string;
+        };
+      };
+    };
   };
 
   const entity = event?.payload?.payment?.entity;
@@ -265,106 +227,31 @@ router.post("/billing/razorpay-webhook", (req: ReqWithRawBody, res: Response) =>
 
   (async () => {
     if (event.event === "payment.captured" && razorpayPaymentId) {
-      // Locate the order created by this app — ignore unknown order IDs.
-      const [order] = await db
-        .select()
-        .from(paymentOrdersTable)
-        .where(eq(paymentOrdersTable.razorpayOrderId, razorpayOrderId));
-
-      if (!order) {
-        req.log.warn({ razorpayOrderId }, "webhook: unknown order, ignoring");
+      if (typeof entity?.amount !== "number" || typeof entity.currency !== "string") {
+        req.log.warn("webhook: captured payment is missing amount or currency");
         return;
       }
 
-      // Fast-path: already verified means credits were already granted.
-      if (order.status === "verified") {
-        req.log.info({ razorpayOrderId }, "webhook: already verified, skipping");
-        return;
+      const result = await settleWebhookPayment(
+        {
+          orderId: razorpayOrderId,
+          paymentId: razorpayPaymentId,
+          amount: entity.amount,
+          currency: entity.currency,
+        },
+        db,
+      );
+      if (
+        result.status !== "settled" &&
+        result.status !== "already_settled" &&
+        result.status !== "order_not_found"
+      ) {
+        req.log.warn({ status: result.status }, "webhook: captured payment was not settled");
+      } else if (result.status === "order_not_found") {
+        req.log.warn("webhook: captured payment order was not found");
       }
-
-      // Full idempotent credit-grant inside a DB transaction.
-      // The conditional UPDATE is the atomic idempotency lock — if /verify-payment
-      // or a duplicate webhook delivery already flipped the status to "verified" or
-      // "failed", this returns 0 rows and we abort before touching credits.
-      await db.transaction(async (tx) => {
-        const locked = await tx
-          .update(paymentOrdersTable)
-          .set({
-            status: "verified",
-            razorpayPaymentId,
-            paidAt: new Date(),
-            updatedAt: new Date(),
-          })
-          .where(
-            and(
-              eq(paymentOrdersTable.id, order.id),
-              ne(paymentOrdersTable.status, "verified"),
-              ne(paymentOrdersTable.status, "failed"),
-            ),
-          )
-          .returning({ id: paymentOrdersTable.id });
-
-        // Another process (verify-payment or duplicate webhook) already won the race.
-        if (locked.length === 0) {
-          req.log.info({ razorpayOrderId }, "webhook: status already locked, skipping credits");
-          return;
-        }
-
-        // Grant credits using order data from our DB — never trust webhook payload for amounts.
-        const [currentCredits] = await tx
-          .select()
-          .from(userCreditsTable)
-          .where(eq(userCreditsTable.userId, order.userId));
-
-        const currentBalance = currentCredits?.balance ?? 0;
-        const newBalance = currentBalance + order.credits;
-
-        if (currentCredits) {
-          await tx
-            .update(userCreditsTable)
-            .set({ balance: newBalance, updatedAt: new Date() })
-            .where(eq(userCreditsTable.userId, order.userId));
-        } else {
-          await tx.insert(userCreditsTable).values({
-            userId: order.userId,
-            balance: newBalance,
-            freeGranted: false,
-          });
-        }
-
-        await tx.insert(creditTransactionsTable).values({
-          userId: order.userId,
-          type: "purchase",
-          credits: order.credits,
-          balanceAfter: newBalance,
-          reason: "Razorpay credit purchase via webhook fallback",
-          metadata: {
-            razorpay_order_id: razorpayOrderId,
-            razorpay_payment_id: razorpayPaymentId,
-            pack_id: order.packId,
-            amount_in_paise: order.amountInPaise,
-            source: "webhook",
-          },
-        });
-
-        req.log.info(
-          { razorpayOrderId, userId: order.userId, credits: order.credits, newBalance },
-          "webhook: credits granted via fallback",
-        );
-      });
     } else if (event.event === "payment.failed") {
-      const [order] = await db
-        .select()
-        .from(paymentOrdersTable)
-        .where(eq(paymentOrdersTable.razorpayOrderId, razorpayOrderId));
-
-      // Do not overwrite a verified order — credits were already granted.
-      if (!order || order.status === "verified" || order.status === "failed") return;
-
-      await db
-        .update(paymentOrdersTable)
-        .set({ status: "failed", updatedAt: new Date() })
-        .where(eq(paymentOrdersTable.id, order.id));
+      await markPaymentOrderFailed(razorpayOrderId, db);
     }
   })().catch((err: unknown) => {
     req.log.error({ err, razorpayOrderId }, "webhook background processing error");

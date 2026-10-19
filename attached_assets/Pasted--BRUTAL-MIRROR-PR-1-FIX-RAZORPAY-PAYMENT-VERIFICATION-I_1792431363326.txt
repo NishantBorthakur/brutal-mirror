@@ -1,0 +1,234 @@
+# BRUTAL MIRROR — PR #1: FIX RAZORPAY PAYMENT VERIFICATION IDEMPOTENCY
+
+## OBJECTIVE
+
+Implement a focused, production-quality fix for the payment verification concurrency vulnerability identified in the October 19, 2026 Brutal Mirror application audit.
+
+This change will be submitted as an independent GitHub pull request and reviewed by Codzee.
+
+The objective is to ensure that one successfully verified Razorpay order can grant purchased credits **exactly once**, even when multiple payment verification requests or webhook events execute concurrently.
+
+## IMPORTANT GIT REQUIREMENTS
+
+Before modifying anything:
+
+1. Confirm the current Git branch.
+2. The expected branch is `fix/razorpay-payment-idempotency`.
+3. Do NOT make changes on `main`.
+4. Inspect the working tree for existing uncommitted changes.
+5. If the correct feature branch is not active or unrelated uncommitted changes exist, report the problem rather than overwrite existing work.
+6. Do not automatically commit, push, merge, deploy, or publish changes.
+
+Keep the implementation limited to this pull request.
+
+## 1. INVESTIGATE THE CURRENT IMPLEMENTATION
+
+Inspect the actual application source, particularly:
+
+- `artifacts/api-server/src/routes/billing.ts`, or the actual payment route file if located elsewhere
+- `lib/db/src/schema/`, particularly the payment order and credit schema
+- Relevant credit transaction logic
+- Razorpay payment verification handlers
+- Razorpay webhook handlers
+- Existing tests and test infrastructure, if present
+
+Understand the existing payment lifecycle, including:
+
+- Order creation
+- Razorpay payment verification
+- Payment status transitions
+- Credit balance updates
+- Credit transaction records
+- Webhook processing
+- Duplicate verification handling
+
+Do not rely solely on previous documentation.
+
+## 2. IDENTIFIED VULNERABILITY
+
+The audit found that `/api/billing/verify-payment` checks an order's current status before performing the database transaction that updates the order and grants credits.
+
+The order-status update is not sufficiently conditional on the order still being eligible.
+
+Consequently, concurrent verification requests can both observe the same initial status and independently grant credits.
+
+This can lead to duplicate credit allocation for a single successful payment.
+
+Review the code and verify that the vulnerability is present before implementing the correction.
+
+## 3. REQUIRED IMPLEMENTATION
+
+Introduce robust, database-backed idempotency for payment verification.
+
+The solution must:
+
+### A. Enforce atomic state transitions
+
+Use a database transaction to atomically claim an eligible payment order and grant credits.
+
+Prefer the existing PostgreSQL/Drizzle architecture and a conditional order-status update, row-level locking, or another appropriate concurrency-safe mechanism.
+
+Only one concurrent request should be able to successfully perform the payment order transition that authorizes the credit grant.
+
+Use the actual existing status lifecycle instead of assuming every valid order must transition from a status named `created`.
+
+### B. Prevent duplicate credit grants
+
+For a successfully verified payment:
+
+- Verify the Razorpay signature before granting any credits.
+- Confirm payment/order ownership and amount information through the existing validation path.
+- Permit exactly one credit allocation for the corresponding paid order.
+- Reject or safely handle a mismatched Razorpay payment ID.
+- Ensure duplicate requests cannot produce additional credits.
+- Ensure duplicate requests cannot produce duplicate purchase transactions.
+
+A repeated legitimate verification should return an appropriate idempotent response without another credit grant.
+
+### C. Preserve transaction integrity
+
+Credit granting, corresponding ledger insertion, and payment order status transition must form one consistent atomic operation.
+
+If the database transaction fails, do not leave behind:
+
+- A verified order without credited balance
+- Credited balance without an appropriate ledger record
+- A purchase ledger record without the corresponding credit update
+
+The entire operation should commit together or roll back together.
+
+### D. Coordinate with the webhook handler
+
+Inspect the existing `payment.captured` webhook behavior.
+
+Make sure verification requests and webhook delivery cannot independently credit the same order twice.
+
+The verification route and webhook should share a consistent, concurrency-safe credit allocation invariant.
+
+Avoid an unnecessary rewrite of unrelated webhook logic.
+
+Handle duplicate delivery and out-of-order events safely.
+
+### E. Preserve existing user behavior
+
+Do not change:
+
+- The credit pack prices or quantities
+- The existing Razorpay provider integration
+- The checkout UI
+- The user authentication system
+- The general payment flow
+- The existing successful checkout response format, unless a minimal compatible change is essential
+- The credit display functionality
+- Unrelated application functionality
+
+Keep the fix focused and compatible with the existing frontend.
+
+## 4. TESTING REQUIREMENTS
+
+Implement meaningful automated tests for the affected logic.
+
+At minimum, cover:
+
+1. A valid paid order receives the correct number of credits.
+2. Repeating verification for the same order does not grant more credits.
+3. Two concurrent verification attempts cannot both grant credits.
+4. A duplicate webhook cannot grant additional credits.
+5. Concurrent webhook and verification processing cannot double-credit.
+6. An invalid Razorpay signature cannot grant credits.
+7. A mismatched payment/order identifier cannot grant credits.
+8. A simulated transaction failure does not leave partial credit or ledger updates.
+9. Existing legitimate verification behavior remains compatible.
+
+Where feasible, use a test PostgreSQL database or isolated transactional test setup capable of detecting real concurrency issues.
+
+Mocks may supplement tests, but mocks alone must not be presented as proof that database concurrency is safe.
+
+Do not:
+
+- Charge a real payment method.
+- Trigger real Razorpay purchases.
+- Consume paid AI credits.
+- Delete user data.
+- Alter production balances or historical payment records.
+
+If the existing environment does not support a safe concurrency integration test, explain the limitation clearly and do not claim that it passed.
+
+## 5. TECHNICAL REQUIREMENTS
+
+- Follow the existing TypeScript and Express architecture.
+- Use Drizzle ORM and PostgreSQL patterns already employed by the project.
+- Preserve existing public API contracts where possible.
+- Maintain strict TypeScript type safety.
+- Do not introduce unnecessary new packages.
+- Avoid creating an entirely new billing subsystem.
+- Use clear, maintainable helper functions where useful.
+- Avoid exposing Razorpay credentials or sensitive payment values in logs.
+- Prefer the smallest correct change that fully addresses the concurrency issue.
+
+## 6. VALIDATION
+
+After implementing the fix:
+
+1. Run the API package's TypeScript typecheck.
+2. Run applicable automated tests.
+3. Run additional focused tests introduced for payment verification.
+4. Review the Git diff to identify accidental unrelated changes.
+5. Check for lint/build failures if relevant scripts exist.
+6. Explain any remaining limitations.
+
+Do not silently modify unrelated code to make the full workspace checks pass.
+
+## 7. FINAL REPORT
+
+At the end, provide a comprehensive implementation summary containing:
+
+### Files Changed
+
+List each modified or newly created file and why it was necessary.
+
+### Root Cause
+
+Explain how the original implementation allowed a duplicate credit grant.
+
+### Solution
+
+Describe the concurrency-control mechanism, transaction boundaries, and order-status transitions.
+
+### Verification Results
+
+Report precisely which tests passed and which were not performed.
+
+### Compatibility
+
+Confirm whether the checkout, webhook, and frontend API responses remain compatible.
+
+### Remaining Risks
+
+Identify any limitations or additional follow-up work.
+
+### Suggested Git Commit Message
+
+Provide a concise conventional commit message.
+
+### Suggested Pull Request Description
+
+Provide a clear, technical GitHub PR description covering the problem, implementation, and testing.
+
+## FINAL CONSTRAINTS
+
+This is Pull Request #1 of three independent changes being prepared for Codzee's code review evaluation.
+
+Do not introduce unrelated feature improvements.
+
+Do not address the session-token-in-checkout-URL issue in this PR; it will be considered separately.
+
+Do not modify the privacy policy or deployment configuration.
+
+Do not change the application design.
+
+Do not commit, push, merge, or deploy automatically.
+
+Focus exclusively on making Razorpay payment verification and credit allocation correct, atomic, and idempotent.
+
+Proceed with implementation and safe testing on the specified feature branch.
